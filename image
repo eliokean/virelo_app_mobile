@@ -1,0 +1,884 @@
+<!-- Rechargement - Paiement -->
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+    <title>Payment Method - Digital Wallet</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#d4d1d5",
+                        "primary-container": "#a3e635",
+                        "on-surface-variant": "#424936",
+                        "on-background": "#1a1c1d",
+                        "tertiary-fixed-dim": "#c8c5ca",
+                        "surface-tint": "#446900",
+                        "inverse-primary": "#98da27",
+                        "primary": "#446900",
+                        "inverse-surface": "#2f3132",
+                        "surface-container": "#eeeeef",
+                        "tertiary": "#5f5e61",
+                        "on-primary-container": "#416400",
+                        "surface-container-highest": "#e2e2e3",
+                        "secondary-fixed-dim": "#c6c6c6",
+                        "on-primary-fixed": "#121f00",
+                        "primary-fixed-dim": "#98da27",
+                        "on-secondary-fixed-variant": "#474747",
+                        "surface-container-low": "#f3f3f4",
+                        "on-primary-fixed-variant": "#334f00",
+                        "on-tertiary-container": "#5a595d",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e4e1e6",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "outline": "#727a64",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-tertiary-fixed": "#1b1b1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "background": "#f9f9fa",
+                        "outline-variant": "#c2cab0",
+                        "surface": "#f9f9fa",
+                        "on-tertiary-fixed-variant": "#47464a",
+                        "on-secondary-container": "#646464",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dadadb",
+                        "secondary-container": "#e2e2e2",
+                        "secondary": "#5e5e5e",
+                        "surface-bright": "#f9f9fa",
+                        "surface-variant": "#e2e2e3",
+                        "on-secondary-fixed": "#1b1b1b",
+                        "surface-container-high": "#e8e8e9",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-surface": "#1a1c1d",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#b2f746"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "1.5rem",
+                        "element-gap": "1rem",
+                        "section-margin": "2.5rem",
+                        "stack-sm": "0.5rem",
+                        "stack-md": "1rem"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "display-xl": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-xl-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "display-xl-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.04em", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .negative-radius {
+            position: relative;
+        }
+
+        .negative-radius::after {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: 0;
+            height: 40px;
+            width: 40px;
+            border-bottom-right-radius: 2rem;
+            box-shadow: 20px 20px 0 20px #f3f3f4;
+            pointer-events: none;
+        }
+
+        .negative-radius::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            left: 0;
+            height: 40px;
+            width: 40px;
+            border-bottom-left-radius: 2rem;
+            box-shadow: -20px 20px 0 20px #f3f3f4;
+            pointer-events: none;
+        }
+
+        .payment-method-selected {
+            border: 2px solid #a3e635;
+        }
+    </style>
+</head>
+
+<body class="bg-on-background text-on-surface min-h-screen flex flex-col">
+    <!-- Top App Bar -->
+    <header
+        class="bg-on-background text-on-primary docked full-width top-0 h-48 flex items-start pt-8 px-container-padding sticky z-40">
+        <div class="flex justify-between items-center w-full">
+            <button
+                class="hover:opacity-80 transition-opacity p-2 -ml-2 flex items-center justify-center active:scale-95 duration-100">
+                <span class="material-symbols-outlined text-on-primary">arrow_back</span>
+            </button>
+            <h1 class="text-headline-lg-mobile font-headline-lg-mobile font-bold text-on-primary">Payment Method</h1>
+            <button
+                class="hover:opacity-80 transition-opacity p-2 -mr-2 flex items-center justify-center active:scale-95 duration-100">
+                <span class="material-symbols-outlined text-on-primary">close</span>
+            </button>
+        </div>
+    </header>
+    <!-- Main Content Canvas -->
+    <main class="flex-1 bg-surface-container-low rounded-t-lg mt-[-80px] relative z-10 negative-radius pb-32">
+        <div class="px-container-padding pt-12 space-y-8 max-w-2xl mx-auto">
+            <!-- Amount Summary Card -->
+            <section class="bg-surface-container-lowest rounded-lg p-6 flex items-center justify-between shadow-sm">
+                <div class="space-y-1">
+                    <p class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Selected
+                        Amount</p>
+                    <h2 class="text-display-xl-mobile font-display-xl-mobile text-on-background">$100.00</h2>
+                </div>
+                <div class="bg-primary-container/10 p-3 rounded-full">
+                    <span class="material-symbols-outlined text-primary text-[32px]"
+                        style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+                </div>
+            </section>
+            <!-- Payment Methods List -->
+            <section class="space-y-4">
+                <div class="flex items-center justify-between px-2">
+                    <h3 class="text-label-sm font-label-sm text-on-surface-variant uppercase">Your Methods</h3>
+                    <button class="text-primary font-label-sm text-label-sm flex items-center gap-1 hover:underline">
+                        Manage <span class="material-symbols-outlined text-[16px]">settings</span>
+                    </button>
+                </div>
+                <div class="space-y-3" id="payment-methods-list"><!-- Wave -->
+                    <label class="block cursor-pointer">
+                        <input checked="" class="hidden peer" name="payment_method" type="radio" value="wave">
+                        <div
+                            class="bg-surface-container-lowest peer-checked:ring-2 peer-checked:ring-primary-container p-5 rounded-lg flex items-center justify-between transition-all hover:bg-white active:scale-[0.98] duration-150">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-on-background flex items-center justify-center rounded-md">
+                                    <span class="material-symbols-outlined text-white">waves</span>
+                                </div>
+                                <div>
+                                    <p class="text-body-md font-bold text-on-background">Wave</p>
+                                    <p class="text-label-sm font-label-sm text-on-surface-variant">Instant transaction
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                class="material-symbols-outlined text-primary peer-checked:opacity-100 opacity-0 transition-opacity">check_circle</span>
+                        </div>
+                    </label>
+                    <!-- Orange Money -->
+                    <label class="block cursor-pointer">
+                        <input class="hidden peer" name="payment_method" type="radio" value="orange_money">
+                        <div
+                            class="bg-surface-container-lowest peer-checked:ring-2 peer-checked:ring-primary-container p-5 rounded-lg flex items-center justify-between transition-all hover:bg-white active:scale-[0.98] duration-150">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-on-background flex items-center justify-center rounded-md">
+                                    <span class="material-symbols-outlined text-white">smartphone</span>
+                                </div>
+                                <div>
+                                    <p class="text-body-md font-bold text-on-background">Orange Money</p>
+                                    <p class="text-label-sm font-label-sm text-on-surface-variant">Instant transaction
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                class="material-symbols-outlined text-primary peer-checked:opacity-100 opacity-0 transition-opacity">check_circle</span>
+                        </div>
+                    </label>
+                    <!-- MTN Mobile Money -->
+                    <label class="block cursor-pointer">
+                        <input class="hidden peer" name="payment_method" type="radio" value="mtn_momo">
+                        <div
+                            class="bg-surface-container-lowest peer-checked:ring-2 peer-checked:ring-primary-container p-5 rounded-lg flex items-center justify-between transition-all hover:bg-white active:scale-[0.98] duration-150">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-on-background flex items-center justify-center rounded-md">
+                                    <span class="material-symbols-outlined text-white">account_balance_wallet</span>
+                                </div>
+                                <div>
+                                    <p class="text-body-md font-bold text-on-background">MTN Mobile Money</p>
+                                    <p class="text-label-sm font-label-sm text-on-surface-variant">Instant transaction
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                class="material-symbols-outlined text-primary peer-checked:opacity-100 opacity-0 transition-opacity">check_circle</span>
+                        </div>
+                    </label>
+                    <!-- Add New Method -->
+                    <button
+                        class="w-full bg-surface-container-lowest border-2 border-dashed border-outline-variant p-5 rounded-lg flex items-center justify-center gap-2 text-on-surface-variant hover:bg-white hover:border-primary transition-all active:scale-[0.98] duration-150">
+                        <span class="material-symbols-outlined">add_circle</span>
+                        <span class="text-body-md font-bold">Add new method</span>
+                    </button>
+                </div>
+            </section>
+            <!-- Illustration / Empty State Accent -->
+            <section class="opacity-50 mix-blend-multiply py-4 hidden md:block">
+                <div
+                    class="h-32 w-full rounded-xl bg-gradient-to-r from-primary-container/20 to-transparent flex items-center px-8">
+                    <div class="space-y-1">
+                        <p class="text-label-sm font-bold">Secure Transactions</p>
+                        <p class="text-label-sm opacity-70">Your payment data is encrypted and protected by bank-level
+                            security.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    <!-- Bottom Action Area -->
+    <div
+        class="fixed bottom-0 left-0 w-full bg-surface-container-lowest px-container-padding py-6 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-50">
+        <div class="max-w-2xl mx-auto flex flex-col gap-4">
+            <div class="flex justify-between items-center text-label-sm px-2">
+                <span class="text-on-surface-variant">Fee</span>
+                <span class="text-on-background font-bold">$0.00</span>
+            </div>
+            <button
+                class="w-full bg-primary-container text-on-primary-container py-5 rounded-xl font-bold text-headline-lg-mobile shadow-lg shadow-primary-container/20 hover:opacity-90 active:scale-95 transition-all duration-150 flex items-center justify-center gap-3">
+                Confirm &amp; Pay
+                <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </div>
+    <!-- Micro-interaction Script -->
+    <script>
+        document.querySelectorAll('input[name="payment_method"]').forEach(input => {
+            input.addEventListener('change', (e) => {
+                // Add any logic for selection here
+                console.log('Selected:', e.target.value);
+            });
+        });
+
+        // Navigation simulation
+        const backBtn = document.querySelector('button .material-symbols-outlined[data-icon="arrow_back"]');
+        if (backBtn) {
+            backBtn.parentElement.onclick = () => {
+                window.history.back();
+            }
+        }
+    </script>
+
+
+</body>
+
+</html>
+
+<!-- Rechargement - Montant -->
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
+    <title>Digital Wallet - Add Money</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&display=swap"
+        rel="stylesheet" />
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .negative-radius-mask {
+            position: relative;
+        }
+
+        .negative-radius-mask::after {
+            content: '';
+            position: absolute;
+            top: -48px;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: #f9f9fa;
+            border-top-left-radius: 3rem;
+            border-top-right-radius: 3rem;
+            z-index: 10;
+        }
+
+        .keypad-button:active {
+            transform: scale(0.9);
+            background-color: #eeeeef;
+        }
+
+        .next-button:active {
+            transform: scale(0.95);
+        }
+
+        body {
+            background-color: #1a1c1d;
+            overscroll-behavior: none;
+        }
+
+        /* Custom scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#d4d1d5",
+                        "primary-container": "#a3e635",
+                        "on-surface-variant": "#424936",
+                        "on-background": "#1a1c1d",
+                        "tertiary-fixed-dim": "#c8c5ca",
+                        "surface-tint": "#446900",
+                        "inverse-primary": "#98da27",
+                        "primary": "#446900",
+                        "inverse-surface": "#2f3132",
+                        "surface-container": "#eeeeef",
+                        "tertiary": "#5f5e61",
+                        "on-primary-container": "#416400",
+                        "surface-container-highest": "#e2e2e3",
+                        "secondary-fixed-dim": "#c6c6c6",
+                        "on-primary-fixed": "#121f00",
+                        "primary-fixed-dim": "#98da27",
+                        "on-secondary-fixed-variant": "#474747",
+                        "surface-container-low": "#f3f3f4",
+                        "on-primary-fixed-variant": "#334f00",
+                        "on-tertiary-container": "#5a595d",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e4e1e6",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "outline": "#727a64",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-tertiary-fixed": "#1b1b1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "background": "#f9f9fa",
+                        "outline-variant": "#c2cab0",
+                        "surface": "#f9f9fa",
+                        "on-tertiary-fixed-variant": "#47464a",
+                        "on-secondary-container": "#646464",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dadadb",
+                        "secondary-container": "#e2e2e2",
+                        "secondary": "#5e5e5e",
+                        "surface-bright": "#f9f9fa",
+                        "surface-variant": "#e2e2e3",
+                        "on-secondary-fixed": "#1b1b1b",
+                        "surface-container-high": "#e8e8e9",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-surface": "#1a1c1d",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#b2f746"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "1.5rem",
+                        "element-gap": "1rem",
+                        "section-margin": "2.5rem",
+                        "stack-sm": "0.5rem",
+                        "stack-md": "1rem"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "display-xl": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-xl-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "display-xl-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.04em", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="font-body-md text-on-surface">
+    <!-- Top Navigation Header (Black Foundation) -->
+    <header class="bg-on-background h-48 w-full pt-8 px-container-padding flex flex-col justify-start z-0">
+        <div class="flex justify-between items-center w-full">
+            <button
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-on-primary hover:bg-white/20 transition-colors duration-200">
+                <span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+            </button>
+            <h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-on-primary">Add Money</h1>
+            <div class="w-10 h-10"></div> <!-- Spacer for centering -->
+        </div>
+    </header>
+    <!-- Content Canvas (Light Fluid Area) -->
+    <main class="relative bg-surface negative-radius-mask min-h-screen flex flex-col items-center">
+        <!-- Main Entry Area -->
+        <section class="flex flex-col items-center w-full px-container-padding mt-2 z-20">
+            <!-- Currency Toggle -->
+            <div class="flex p-1 bg-surface-container-high rounded-full mt-4 mb-8">
+                <button
+                    class="px-6 py-2 rounded-full font-label-sm text-label-sm transition-all duration-200 bg-on-background text-on-primary"
+                    id="usd-toggle" onclick="setCurrency('USD')">USD</button>
+                <button
+                    class="px-6 py-2 rounded-full font-label-sm text-label-sm transition-all duration-200 text-on-surface-variant"
+                    id="eur-toggle" onclick="setCurrency('EUR')">EUR</button>
+            </div>
+            <!-- Amount Display -->
+            <div class="flex flex-col items-center justify-center py-8">
+                <span
+                    class="font-display-xl-mobile text-display-xl-mobile md:font-display-xl md:text-display-xl text-on-background tracking-tighter"
+                    id="amount-display">
+                    $0.00
+                </span>
+                <span
+                    class="font-label-sm text-label-sm text-on-surface-variant mt-2 uppercase tracking-widest opacity-60">Balance:
+                    $4,280.50</span>
+            </div>
+            <!-- Animated Decorative Gradient (Subtle) -->
+            <div
+                class="absolute top-40 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary-container/20 blur-[80px] -z-10 rounded-full">
+            </div>
+        </section>
+        <!-- Dynamic Keypad Area -->
+        <section class="mt-auto w-full max-w-md bg-white p-container-padding rounded-t-lg shadow-sm z-20">
+            <div class="grid grid-cols-3 gap-4 mb-8">
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('1')">1</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('2')">2</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('3')">3</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('4')">4</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('5')">5</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('6')">6</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('7')">7</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('8')">8</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('9')">9</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('.')">.</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="appendDigit('0')">0</button>
+                <button
+                    class="keypad-button h-16 flex items-center justify-center font-headline-lg text-headline-lg text-on-background rounded-2xl transition-all"
+                    onclick="deleteDigit()">
+                    <span class="material-symbols-outlined" data-icon="backspace">backspace</span>
+                </button>
+            </div>
+            <!-- Signature Lime Next Button -->
+            <button
+                class="next-button w-full bg-primary-container text-on-primary-container font-headline-lg text-headline-lg-mobile py-5 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20 transition-all">
+                Next
+                <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+            </button>
+            <div class="h-8"></div> <!-- Safe area spacing -->
+        </section>
+    </main>
+    <!-- Bottom Navigation Suppression Logic: This is a task-focused sub-page, so no global nav is rendered. -->
+    <script>
+        let currentAmount = "0";
+        let currentCurrency = "USD";
+
+        const display = document.getElementById('amount-display');
+        const usdToggle = document.getElementById('usd-toggle');
+        const eurToggle = document.getElementById('eur-toggle');
+
+        function updateDisplay() {
+            let symbol = currentCurrency === "USD" ? "$" : "€";
+            let formatted = parseFloat(currentAmount).toLocaleString(undefined, {
+                minimumFractionDigits: currentAmount.includes('.') ? currentAmount.split('.')[1].length : 0,
+                maximumFractionDigits: 2
+            });
+
+            // Logic to keep the trailing zeros visible if they were typed
+            if (currentAmount.endsWith('.')) {
+                display.innerText = `${symbol}${formatted}.`;
+            } else if (currentAmount.includes('.') && currentAmount.endsWith('0')) {
+                display.innerText = `${symbol}${currentAmount}`;
+            } else {
+                display.innerText = `${symbol}${formatted}`;
+            }
+        }
+
+        function appendDigit(digit) {
+            if (currentAmount === "0" && digit !== ".") {
+                currentAmount = digit;
+            } else {
+                // Prevent multiple decimals
+                if (digit === "." && currentAmount.includes(".")) return;
+
+                // Prevent more than 2 decimal places
+                if (currentAmount.includes(".")) {
+                    const parts = currentAmount.split(".");
+                    if (parts[1].length >= 2) return;
+                }
+
+                // Limit max amount for UI safety
+                if (currentAmount.replace('.', '').length >= 9) return;
+
+                currentAmount += digit;
+            }
+            updateDisplay();
+        }
+
+        function deleteDigit() {
+            if (currentAmount.length > 1) {
+                currentAmount = currentAmount.slice(0, -1);
+                if (currentAmount.endsWith('.')) {
+                    // visual fix for backspacing decimal
+                }
+            } else {
+                currentAmount = "0";
+            }
+            updateDisplay();
+        }
+
+        function setCurrency(curr) {
+            currentCurrency = curr;
+            if (curr === "USD") {
+                usdToggle.classList.add('bg-on-background', 'text-on-primary');
+                usdToggle.classList.remove('text-on-surface-variant');
+                eurToggle.classList.remove('bg-on-background', 'text-on-primary');
+                eurToggle.classList.add('text-on-surface-variant');
+            } else {
+                eurToggle.classList.add('bg-on-background', 'text-on-primary');
+                eurToggle.classList.remove('text-on-surface-variant');
+                usdToggle.classList.remove('bg-on-background', 'text-on-primary');
+                usdToggle.classList.add('text-on-surface-variant');
+            }
+            updateDisplay();
+        }
+
+        // Haptic-like feedback on keypad
+        document.querySelectorAll('.keypad-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(10);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
+
+<!-- Rechargement - Succès -->
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Digital Wallet - Success</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#d4d1d5",
+                        "primary-container": "#a3e635",
+                        "on-surface-variant": "#424936",
+                        "on-background": "#1a1c1d",
+                        "tertiary-fixed-dim": "#c8c5ca",
+                        "surface-tint": "#446900",
+                        "inverse-primary": "#98da27",
+                        "primary": "#446900",
+                        "inverse-surface": "#2f3132",
+                        "surface-container": "#eeeeef",
+                        "tertiary": "#5f5e61",
+                        "on-primary-container": "#416400",
+                        "surface-container-highest": "#e2e2e3",
+                        "secondary-fixed-dim": "#c6c6c6",
+                        "on-primary-fixed": "#121f00",
+                        "primary-fixed-dim": "#98da27",
+                        "on-secondary-fixed-variant": "#474747",
+                        "surface-container-low": "#f3f3f4",
+                        "on-primary-fixed-variant": "#334f00",
+                        "on-tertiary-container": "#5a595d",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e4e1e6",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "outline": "#727a64",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-tertiary-fixed": "#1b1b1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "background": "#f9f9fa",
+                        "outline-variant": "#c2cab0",
+                        "surface": "#f9f9fa",
+                        "on-tertiary-fixed-variant": "#47464a",
+                        "on-secondary-container": "#646464",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dadadb",
+                        "secondary-container": "#e2e2e2",
+                        "secondary": "#5e5e5e",
+                        "surface-bright": "#f9f9fa",
+                        "surface-variant": "#e2e2e3",
+                        "on-secondary-fixed": "#1b1b1b",
+                        "surface-container-high": "#e8e8e9",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-surface": "#1a1c1d",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#b2f746"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "1.5rem",
+                        "element-gap": "1rem",
+                        "section-margin": "2.5rem",
+                        "stack-sm": "0.5rem",
+                        "stack-md": "1rem"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "display-xl": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-xl-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "display-xl-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.04em", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f9f9fa;
+            /* surface-bright */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Custom negative border radius transition effect */
+        .header-curve {
+            position: relative;
+            background-color: #1a1c1d;
+            /* on-background */
+        }
+
+        .header-curve::after {
+            content: '';
+            position: absolute;
+            bottom: -48px;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background-color: #1a1c1d;
+            border-bottom-left-radius: 3rem;
+            border-bottom-right-radius: 3rem;
+        }
+
+        /* Success pulse animation */
+        @keyframes success-pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .animate-success {
+            animation: success-pulse 2s ease-in-out infinite;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="flex flex-col min-h-screen">
+    <!-- Top Navigation (Shell suppressed for success screen as per focus journey rule, but keeping TopAppBar for branding) -->
+    <header
+        class="header-curve docked full-width top-0 h-48 flex items-start pt-8 bg-on-background dark:bg-on-background z-10">
+        <div class="flex justify-between items-center w-full px-container-padding">
+            <button
+                class="text-on-primary dark:text-on-primary hover:opacity-80 transition-opacity active:scale-95 duration-100">
+                <span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+            </button>
+            <h1 class="text-headline-lg-mobile font-headline-lg-mobile font-bold text-on-primary">Digital Wallet</h1>
+            <button
+                class="text-on-primary dark:text-on-primary hover:opacity-80 transition-opacity active:scale-95 duration-100">
+                <span class="material-symbols-outlined" data-icon="close">close</span>
+            </button>
+        </div>
+    </header>
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col items-center justify-center px-container-padding pt-16 pb-32 relative z-0">
+        <!-- Success Illustration Section -->
+        <div class="flex flex-col items-center text-center mb-section-margin">
+            <div
+                class="w-32 h-32 bg-primary-container rounded-full flex items-center justify-center mb-stack-md shadow-lg animate-success">
+                <span class="material-symbols-outlined text-[64px] text-on-primary-container" data-icon="check_circle"
+                    style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            </div>
+            <h2 class="text-display-xl-mobile font-display-xl-mobile text-on-background mb-2">Success!</h2>
+            <p class="text-body-md font-body-md text-on-surface-variant max-w-[280px]">
+                You have successfully added <span class="font-bold text-on-background">$100.00</span> to your wallet.
+            </p>
+        </div>
+        <!-- Transaction Details Card -->
+        <div class="w-full max-w-md bg-surface-container-lowest rounded-lg p-6 shadow-sm mb-section-margin">
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-label-sm font-label-sm text-on-surface-variant">Date</span>
+                    <span class="text-label-sm font-label-sm text-on-background">Oct 24, 2023 • 14:20</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-label-sm font-label-sm text-on-surface-variant">Method</span>
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px] text-primary"
+                            data-icon="credit_card">credit_card</span>
+                        <span class="text-label-sm font-label-sm text-on-background">Visa •••• 4242</span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-label-sm font-label-sm text-on-surface-variant">Transaction ID</span>
+                    <span class="text-label-sm font-label-sm text-on-background">#DW-98234-LX</span>
+                </div>
+                <div class="pt-4 border-t border-outline-variant flex justify-between items-center">
+                    <span class="text-label-sm font-label-sm text-on-surface-variant font-bold">Total Amount</span>
+                    <span class="text-headline-lg font-headline-lg text-primary">$100.00</span>
+                </div>
+            </div>
+        </div>
+        <!-- Action Buttons -->
+        <div class="w-full max-w-md flex flex-col gap-element-gap">
+            <button
+                class="w-full bg-primary-container text-on-primary-container py-4 rounded-full font-bold text-body-md hover:opacity-90 active:scale-95 transition-all shadow-md">
+                Back to Home
+            </button>
+            <button
+                class="w-full bg-surface-container text-on-background py-4 rounded-full font-bold text-body-md hover:bg-surface-container-high active:scale-95 transition-all">
+                View Receipt
+            </button>
+        </div>
+    </main>
+    <!-- Visual Decorative Element (Abstract Shader Pattern Placeholder) -->
+    <div class="fixed bottom-0 left-0 w-full h-1/3 -z-10 pointer-events-none opacity-40">
+
+    </div>
+    <!-- Interactive Feedback Script -->
+    <script>
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function (e) {
+                // Simple ripple/interaction effect logic
+                let x = e.clientX - e.target.offsetLeft;
+                let y = e.clientY - e.target.offsetTop;
+
+                console.log(`Action triggered at ${x}, ${y}`);
+            });
+        });
+
+        // Suppressing BottomNavBar as per "Task-Focused" exclusion rule in prompt guidelines
+    </script>
+</body>
+
+</html>
