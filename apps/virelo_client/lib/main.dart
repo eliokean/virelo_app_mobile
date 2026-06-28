@@ -1,0 +1,61 @@
+import 'package:flutter/material.dart';
+import 'package:virelo_design_system/theme/app_colors.dart';
+import 'features/auth/presentation/pages/login_page.dart';
+import 'features/auth/presentation/pages/pin_login_page.dart';
+import 'package:virelo_core/network/api_client.dart';
+import 'package:virelo_core/services/auth_service.dart';
+
+void main() {
+  runApp(const VireloApp());
+}
+
+class VireloApp extends StatefulWidget {
+  const VireloApp({super.key});
+
+  @override
+  State<VireloApp> createState() => _VireloAppState();
+}
+
+class _VireloAppState extends State<VireloApp> {
+  late final AuthService _authService;
+  late final Future<bool> _hasPinFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = AuthService(ApiClient());
+    _hasPinFuture = _authService.hasLocalPin();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Virelo',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        scaffoldBackgroundColor: AppColors.background,
+        colorScheme: const ColorScheme.dark(
+          primary: AppColors.accent,
+          surface: AppColors.surfaceCard,
+        ),
+        useMaterial3: true,
+      ),
+      home: FutureBuilder<bool>(
+        future: _hasPinFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator(color: AppColors.accent)),
+            );
+          }
+          final hasPin = snapshot.data ?? false;
+          if (hasPin) {
+            return const PinLoginPage();
+          } else {
+            return const LoginPage();
+          }
+        },
+      ),
+    );
+  }
+}

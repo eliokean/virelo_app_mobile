@@ -1,0 +1,100 @@
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:virelo_design_system/theme/app_colors.dart';
+import 'package:virelo_design_system/theme/app_text_styles.dart';
+import 'package:virelo_design_system/constants/app_spacing.dart';
+import 'package:virelo_design_system/widgets/virelo_text_field.dart';
+import 'package:virelo_design_system/widgets/virelo_primary_button.dart';
+import 'login_network_pin_page.dart';
+import 'register_page.dart';
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _phoneController = TextEditingController();
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  void _handleContinue() {
+    final phone = _phoneController.text.trim();
+
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez saisir votre numéro')),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => LoginNetworkPinPage(phone: phone)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 60),
+              // Logo ou Titre
+              Text(
+                'Bienvenue',
+                style: AppTextStyles.headlineLarge.copyWith(color: AppColors.textPrimary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Connectez-vous pour accéder à votre Virelo',
+                style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 60),
+
+              // Formulaire
+              VireloTextField(
+                controller: _phoneController,
+                hint: 'Numéro de téléphone',
+                prefixIcon: LucideIcons.phone,
+                keyboardType: TextInputType.phone,
+              ),
+              
+              const SizedBox(height: AppSpacing.xl),
+              VireloPrimaryButton(
+                label: 'Continuer',
+                icon: LucideIcons.arrowRight,
+                onPressed: _handleContinue,
+              ),
+              
+              const SizedBox(height: AppSpacing.xxl),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RegisterPage()),
+                  );
+                },
+                child: Text(
+                  'Pas encore de compte ? S\'inscrire',
+                  style: AppTextStyles.button.copyWith(color: AppColors.accent),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

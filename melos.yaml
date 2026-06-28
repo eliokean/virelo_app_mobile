@@ -1,0 +1,13 @@
+name: virelo
+
+packages:
+  - apps/*
+  - packages/*
+
+scripts:
+  analyze:
+    exec: flutter analyze
+    description: Run flutter analyze on all packages
+  build_all:
+    exec: flutter build apk
+    description: Build APK for all apps
