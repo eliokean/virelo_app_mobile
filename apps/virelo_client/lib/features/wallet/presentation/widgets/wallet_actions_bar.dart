@@ -21,11 +21,12 @@ class WalletActionsBar extends StatelessWidget {
             child: _buildActionButton(
               label: 'Envoyer',
               icon: LucideIcons.arrowRightLeft,
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const TransferContactPage()),
                 );
+                onRefresh?.call();
               },
             ),
           ),
@@ -111,11 +112,12 @@ class WalletActionsBar extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const GeneratePaymentQrAmountPage()),
             );
+            onRefresh?.call();
           },
           borderRadius: BorderRadius.circular(20),
           child: Column(

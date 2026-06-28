@@ -99,16 +99,21 @@ class _WalletPageState extends State<WalletPage> {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(40),
                   ),
-                  child: const SingleChildScrollView(
-                    padding: EdgeInsets.all(AppSpacing.screenH),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SendAgainSection(),
-                        SizedBox(height: AppSpacing.xxl),
-                        RecentActivityList(),
-                        SizedBox(height: AppSpacing.huge),
-                      ],
+                  child: RefreshIndicator(
+                    onRefresh: _fetchBalance,
+                    color: const Color(0xFF161A22),
+                    child: const SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.all(AppSpacing.screenH),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SendAgainSection(),
+                          SizedBox(height: AppSpacing.xxl),
+                          RecentActivityList(),
+                          SizedBox(height: AppSpacing.huge),
+                        ],
+                      ),
                     ),
                   ),
                 ),
