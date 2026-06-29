@@ -1,11 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/constants/api_constants.dart';
 import 'package:dio/dio.dart';
+import '../../../../core/services/offline_sync_service.dart';
 
 class ReceivePaymentPage extends StatefulWidget {
   const ReceivePaymentPage({super.key});
@@ -28,19 +31,77 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
         setState(() => _isProcessing = true);
 
         try {
-          final response = await ApiClient().dio.post(
-            ApiConstants.processOffline,
-            data: {'token': code},
-          );
+          // Decode amount from token for local UI and offline storage
+          double amount = 0;
+          try {
+            final decoded = utf8.decode(base64Decode(code));
+            final payload = jsonDecode(decoded);
+            amount = (payload['amount'] as num).toDouble();
+          } catch (e) {
+            throw Exception("Format de jeton invalide");
+          }
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Paiement réussi ! ${response.data['amount']} XOF encaissés.'),
-                backgroundColor: AppColors.success,
-              ),
+          try {
+            // First check connectivity explicitly
+            final connectivityResult = await (Connectivity().checkConnectivity());
+            final isOffline = connectivityResult.contains(ConnectivityResult.none);
+
+            if (isOffline) {
+              // Direct to offline
+              final offlineService = OfflineSyncService(ApiClient());
+              await offlineService.saveTransaction(code, amount);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Hors-ligne : paiement mis en attente de synchronisation.'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                Navigator.pop(context);
+              }
+              return;
+            }
+
+            // If online, proceed with normal API request
+            final response = await ApiClient().dio.post(
+              ApiConstants.processOffline,
+              data: {'token': code},
             );
-            Navigator.pop(context); // Go back to dashboard
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Paiement réussi ! ${response.data['amount']} XOF encaissés.'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+              Navigator.pop(context); // Go back to dashboard
+            }
+          } on DioException catch (e) {
+            // If it's a network error, we save offline (Telecollecte)
+            if (e.type == DioExceptionType.connectionTimeout || 
+                e.type == DioExceptionType.receiveTimeout || 
+                e.type == DioExceptionType.connectionError ||
+                e.type == DioExceptionType.unknown ||
+                (e.type == DioExceptionType.badResponse && 
+                 [404, 500, 502, 503, 504].contains(e.response?.statusCode))) {
+              
+              final offlineService = OfflineSyncService(ApiClient());
+              await offlineService.saveTransaction(code, amount);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Hors-ligne : paiement mis en attente de synchronisation.'),
+                    backgroundColor: Colors.orange, // Orange for offline
+                  ),
+                );
+                Navigator.pop(context); // Go back to dashboard
+              }
+            } else {
+              rethrow; // Rethrow other API errors (e.g., 400 Bad Request)
+            }
           }
         } catch (e) {
           String errorMessage = 'Erreur lors de l\'encaissement';

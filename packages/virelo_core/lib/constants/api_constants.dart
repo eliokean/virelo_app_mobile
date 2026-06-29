@@ -1,6 +1,6 @@
 class ApiConstants {
   // L'IP locale utilisée pour tester avec le backend Laravel (hors Docker)
-  static const String baseUrl = 'http://192.168.1.65:8000/api';
+  static const String baseUrl = 'https://stimulate-bladder-hurry.ngrok-free.dev';
 
   // Auth endpoints
   static const String register = '/auth/register';

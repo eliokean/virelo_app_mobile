@@ -21,6 +21,11 @@ class ApiClient {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        // Fix URI resolution by ensuring path starts with /api
+        if (!options.path.startsWith('/api')) {
+          options.path = '/api${options.path.startsWith('/') ? options.path : '/${options.path}'}';
+        }
+
         // Ajouter le token dynamiquement
         final token = await _secureStorage.read(key: 'auth_token');
         if (token != null) {

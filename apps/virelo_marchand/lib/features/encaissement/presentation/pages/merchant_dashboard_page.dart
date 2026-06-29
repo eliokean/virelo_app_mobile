@@ -8,6 +8,7 @@ import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/merchant_service.dart';
 import '../../../../config/routes/route_names.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/services/offline_sync_service.dart';
 
 class MerchantDashboardPage extends StatefulWidget {
   const MerchantDashboardPage({super.key});
@@ -18,21 +19,26 @@ class MerchantDashboardPage extends StatefulWidget {
 
 class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
   late final MerchantService _merchantService;
+  late final OfflineSyncService _offlineSyncService;
   bool _isLoading = true;
   String _balance = "0";
   String _merchantName = "Chargement...";
   List<dynamic> _transactions = [];
+  int _pendingSyncCount = 0;
+  bool _isSyncing = false;
 
   @override
   void initState() {
     super.initState();
     _merchantService = MerchantService(ApiClient());
+    _offlineSyncService = OfflineSyncService(ApiClient());
     _loadDashboardData();
   }
 
   Future<void> _loadDashboardData() async {
     setState(() => _isLoading = true);
     try {
+      final pendingCount = await _offlineSyncService.getPendingCount();
       final statsResponse = await _merchantService.getStats();
       final statsData = statsResponse['data'] ?? statsResponse;
       
@@ -49,17 +55,49 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
               ? double.parse(wallet['balance'].toString()).toStringAsFixed(0) 
               : "0";
           _transactions = txData;
+          _pendingSyncCount = pendingCount;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
+        final pendingCount = await _offlineSyncService.getPendingCount();
         setState(() {
           _merchantName = "Boutique";
           _balance = "0";
+          _pendingSyncCount = pendingCount;
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _syncOfflineTransactions() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+
+    try {
+      await _offlineSyncService.syncPendingTransactions();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Synchronisation réussie !'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+      await _loadDashboardData();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
     }
   }
 
@@ -104,6 +142,11 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                     // Hero Card (Recettes)
                     _buildHeroCard(),
                     
+                    if (_pendingSyncCount > 0) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      _buildSyncBanner(),
+                    ],
+
                     const SizedBox(height: AppSpacing.xl),
                     
                     // Actions rapides
@@ -264,6 +307,62 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSyncBanner() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(LucideIcons.wifiOff, color: Colors.orange, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Télécollecte en attente',
+                  style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '$_pendingSyncCount transaction(s) hors-ligne',
+                  style: AppTextStyles.bodySmall.copyWith(color: Colors.orange[200]),
+                ),
+              ],
+            ),
+          ),
+          _isSyncing
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(color: Colors.orange, strokeWidth: 2),
+                )
+              : ElevatedButton(
+                  onPressed: _syncOfflineTransactions,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Envoyer', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
         ],
       ),
     );
