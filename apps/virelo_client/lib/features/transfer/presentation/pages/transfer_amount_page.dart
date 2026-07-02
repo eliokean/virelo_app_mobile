@@ -1,16 +1,24 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:virelo_core/network/api_client.dart';
+import 'package:dio/dio.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'show_offline_proof_page.dart';
 
 class TransferAmountPage extends StatefulWidget {
   final String beneficiaryName;
+  final String beneficiaryPhone;
   
   const TransferAmountPage({
     super.key,
     required this.beneficiaryName,
+    required this.beneficiaryPhone,
   });
 
   @override
@@ -18,7 +26,119 @@ class TransferAmountPage extends StatefulWidget {
 }
 
 class _TransferAmountPageState extends State<TransferAmountPage> {
+  final ApiClient _apiClient = ApiClient();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String _amount = "0";
+  double? _balance;
+  bool _isLoadingBalance = true;
+  bool _isTransferring = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBalance();
+  }
+
+  Future<void> _fetchBalance() async {
+    try {
+      final response = await _apiClient.dio.get('/wallets/balance');
+      if (mounted) {
+        setState(() {
+          _balance = double.parse(response.data['balance'].toString());
+          _isLoadingBalance = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingBalance = false);
+      }
+    }
+  }
+
+  Future<void> _executeTransfer() async {
+    if (_amount == "0" || _amount.isEmpty) return;
+    
+    setState(() => _isTransferring = true);
+    
+    try {
+      final response = await _apiClient.dio.post('/transfers/phone', data: {
+        'phone': widget.beneficiaryPhone.replaceAll(RegExp(r'\s+'), ''),
+        'amount': double.parse(_amount.replaceAll(' ', '').replaceAll(',', '.')),
+      });
+      
+      if (mounted) {
+        setState(() => _isTransferring = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transfert effectué avec succès !')),
+        );
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(() => _isTransferring = false);
+        final errorMsg = e.response?.data['message'] ?? 'Erreur réseau, passage en mode hors ligne...';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.orange),
+        );
+        _handleOfflineFallback();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isTransferring = false);
+        _handleOfflineFallback();
+      }
+    }
+  }
+
+  Future<void> _handleOfflineFallback() async {
+    final offlineToken = await _storage.read(key: 'offline_token');
+    final escrowSecret = await _storage.read(key: 'escrow_secret');
+    if (offlineToken == null || escrowSecret == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Aucun budget hors ligne alloué. Veuillez vous connecter.'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    try {
+      final jwt = JWT({
+        'sender_token': offlineToken,
+        'receiver_phone': widget.beneficiaryPhone,
+        'amount': _amount,
+        'nonce': DateTime.now().millisecondsSinceEpoch.toString(),
+      });
+      
+      final signedPayload = jwt.sign(SecretKey(escrowSecret));
+      
+      // We will send a json string that contains the signature so the scanner easily parses it
+      final qrData = jsonEncode({
+        'amount': _amount,
+        'sender_token': offlineToken,
+        'signature': signedPayload,
+      });
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ShowOfflineProofPage(
+              beneficiaryName: widget.beneficiaryName,
+              amount: _amount,
+              signedPayload: qrData,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur cryptographique: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 
   void _appendDigit(String digit) {
     setState(() {
@@ -167,13 +287,20 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            'Solde actuel: 6 831 060 FCFA',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: const Color(0xFF8B93A8),
-                              letterSpacing: 1.2,
+                          if (_isLoadingBalance)
+                            const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B93A8)),
+                            )
+                          else
+                            Text(
+                              'Solde actuel: ${_balance?.toStringAsFixed(0) ?? 0} FCFA',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: const Color(0xFF8B93A8),
+                                letterSpacing: 1.2,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -201,15 +328,7 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
                             width: double.infinity,
                             height: 60,
                             child: ElevatedButton(
-                              onPressed: _amount == "0" ? null : () {
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(builder: (_) => TransferContactPage(amount: _amount)),
-                                // );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Séléction du bénéficiaire à implémenter')),
-                                );
-                              },
+                              onPressed: (_amount == "0" || _isTransferring) ? null : _executeTransfer,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.accent, // Virelo Green
                                 disabledBackgroundColor: AppColors.surfaceBorder,
@@ -218,20 +337,22 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
                                 ),
                                 elevation: 0,
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Choisir un contact',
-                                    style: AppTextStyles.headlineMedium.copyWith(
-                                      color: const Color(0xFF161A22),
-                                      fontWeight: FontWeight.bold,
+                              child: _isTransferring
+                                  ? const CircularProgressIndicator(color: Color(0xFF161A22))
+                                  : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'Envoyer $_formattedAmount FCFA',
+                                          style: AppTextStyles.headlineMedium.copyWith(
+                                            color: const Color(0xFF161A22),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: AppSpacing.sm),
+                                        const Icon(LucideIcons.send, color: Color(0xFF161A22)),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  const Icon(LucideIcons.arrowRight, color: Color(0xFF161A22)),
-                                ],
-                              ),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),

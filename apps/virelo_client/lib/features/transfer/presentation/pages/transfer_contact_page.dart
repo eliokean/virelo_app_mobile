@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'transfer_amount_page.dart';
+import 'scan_contact_page.dart';
 
 class TransferContactPage extends StatefulWidget {
   const TransferContactPage({super.key});
@@ -47,11 +48,11 @@ class _TransferContactPageState extends State<TransferContactPage> {
     }
   }
 
-  void _selectContact(String name) {
+  void _selectContact(String name, String phone) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => TransferAmountPage(beneficiaryName: name),
+        builder: (_) => TransferAmountPage(beneficiaryName: name, beneficiaryPhone: phone),
       ),
     );
   }
@@ -116,7 +117,7 @@ class _TransferContactPageState extends State<TransferContactPage> {
                     onSubmitted: (val) {
                       if (val.isNotEmpty) {
                         Navigator.pop(context);
-                        _selectContact(val);
+                        _selectContact('Nouveau Contact', val);
                       }
                     },
                   ),
@@ -128,7 +129,7 @@ class _TransferContactPageState extends State<TransferContactPage> {
                     onPressed: () {
                       if (newNumber.isNotEmpty) {
                         Navigator.pop(context);
-                        _selectContact(newNumber);
+                        _selectContact('Nouveau Contact', newNumber);
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -242,8 +243,14 @@ class _TransferContactPageState extends State<TransferContactPage> {
                           icon: LucideIcons.scanLine,
                           title: 'Scanner\nQR / NFC',
                           color: const Color(0xFF94A3B8), // Slate grey doux
-                          onTap: () {
-                            // TODO: Ouvrir la caméra / lecture NFC
+                          onTap: () async {
+                            final phone = await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ScanContactPage()),
+                            );
+                            if (phone != null && phone is String) {
+                              _selectContact('Contact Scanné', phone);
+                            }
                           },
                         )),
                       ],
@@ -437,7 +444,7 @@ class _TransferContactPageState extends State<TransferContactPage> {
     final firstChar = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
     return InkWell(
-      onTap: () => _selectContact(name),
+      onTap: () => _selectContact(name, subtitle),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

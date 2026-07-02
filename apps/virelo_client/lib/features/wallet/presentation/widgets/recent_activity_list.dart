@@ -3,9 +3,84 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import '../../../history/presentation/pages/history_page.dart';
+import 'package:virelo_core/network/api_client.dart';
+import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-class RecentActivityList extends StatelessWidget {
+class RecentActivityList extends StatefulWidget {
   const RecentActivityList({super.key});
+
+  @override
+  State<RecentActivityList> createState() => _RecentActivityListState();
+}
+
+class _RecentActivityListState extends State<RecentActivityList> {
+  final ApiClient _apiClient = ApiClient();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  List<dynamic> _activities = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedHistory();
+    _fetchHistory();
+  }
+
+  Future<void> _loadCachedHistory() async {
+    try {
+      final cached = await _storage.read(key: 'cached_history');
+      if (cached != null && mounted) {
+        setState(() {
+          _activities = jsonDecode(cached);
+          _isLoading = false;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _fetchHistory() async {
+    try {
+      final response = await _apiClient.dio.get('/wallets/history');
+      await _storage.write(key: 'cached_history', value: jsonEncode(response.data));
+      if (mounted) {
+        setState(() {
+          _activities = response.data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        debugPrint('Erreur lors de la récupération de l\'historique: $e');
+      }
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      if (date.year == now.year && date.month == now.month && date.day == now.day) {
+        return "Aujourd'hui, ${DateFormat('HH:mm').format(date)}";
+      } else if (date.year == now.year && date.month == now.month && date.day == now.day - 1) {
+        return "Hier, ${DateFormat('HH:mm').format(date)}";
+      }
+      return DateFormat('dd MMM yyyy, HH:mm').format(date);
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  IconData _getIconForType(String type, bool isNegative) {
+    if (type == 'c2c_transfer') {
+      return isNegative ? LucideIcons.arrowUpRight : LucideIcons.arrowDownLeft;
+    }
+    return LucideIcons.shoppingBag;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,21 +115,29 @@ class RecentActivityList extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        _buildActivityItem(
-          icon: LucideIcons.dribbble,
-          title: 'Dribbble',
-          subtitle: 'Hier',
-          amount: '-\$15',
-          isNegative: true,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _buildActivityItem(
-          icon: LucideIcons.arrowDownLeft,
-          title: 'Hannah Jones',
-          subtitle: 'Il y a 2h',
-          amount: '+\$200',
-          isNegative: false,
-        ),
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator(color: Color(0xFFB5E48C)))
+        else if (_activities.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+            child: Text('Aucune activité récente.'),
+          )
+        else
+          ..._activities.map((activity) {
+            final isNegative = activity['is_negative'] ?? false;
+            final amountStr = '${isNegative ? '-' : '+'}${activity['amount']} FCFA';
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: _buildActivityItem(
+                icon: _getIconForType(activity['type'], isNegative),
+                title: activity['title'] ?? 'Transaction',
+                subtitle: _formatDate(activity['date']),
+                amount: amountStr,
+                isNegative: isNegative,
+              ),
+            );
+          }),
       ],
     );
   }

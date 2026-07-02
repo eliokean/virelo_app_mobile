@@ -43,6 +43,10 @@ dependencies:
     path: ../../packages/virelo_design_system
   flutter_svg: ^2.0.10
   qr_flutter: ^4.1.0
+  mobile_scanner: ^7.2.0
+  nfc_manager: ^4.2.1
+  crypto: ^3.0.7
+  dart_jsonwebtoken: ^3.4.1
 
 dev_dependencies:
   flutter_test:
