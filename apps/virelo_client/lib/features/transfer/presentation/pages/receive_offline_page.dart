@@ -7,6 +7,11 @@ import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:dio/dio.dart';
+import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/crypto/offline_crypto_service.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import 'package:virelo_core/offline_sync/offline_authorization_payload.dart';
+import 'transfer_amount_page.dart';
 
 class ReceiveOfflinePage extends StatefulWidget {
   const ReceiveOfflinePage({super.key});
@@ -19,7 +24,15 @@ class _ReceiveOfflinePageState extends State<ReceiveOfflinePage> {
   final MobileScannerController _cameraController = MobileScannerController();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final ApiClient _apiClient = ApiClient();
+  late final OfflineCryptoService _offlineCryptoService;
   bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final authService = AuthService(_apiClient);
+    _offlineCryptoService = OfflineCryptoService(OfflineStorageService(authService));
+  }
 
   @override
   void dispose() {
@@ -32,34 +45,62 @@ class _ReceiveOfflinePageState extends State<ReceiveOfflinePage> {
     setState(() => _isProcessing = true);
 
     try {
-      final payload = jsonDecode(rawData);
+      // Check if it's a simple QR (e.g. virelo://pay?phone=... or just a phone number)
+      final uri = Uri.tryParse(rawData);
+      String? phone;
+      if (uri != null && uri.queryParameters.containsKey('phone')) {
+        phone = uri.queryParameters['phone'];
+      } else if (RegExp(r'^\+?[0-9]{8,15}$').hasMatch(rawData)) {
+        phone = rawData;
+      }
+
+      if (phone != null) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TransferAmountPage(
+                beneficiaryName: 'Contact Scanné',
+                beneficiaryPhone: phone!,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final payloadJson = jsonDecode(rawData);
       
-      // Verification factice de la signature pour le PoC
-      if (payload['signature'] != null && payload['amount'] != null) {
+      try {
+        final payload = OfflineAuthorizationPayload.fromJson(payloadJson);
         
+        // Vérification cryptographique réelle
+        final isValid = await _offlineCryptoService.verifyPayload(payload);
+        
+        if (!isValid) {
+          throw Exception('Signature cryptographique invalide (Tentative de fraude)');
+        }
+
         // Tentative de synchronisation immédiate si réseau disponible
         bool syncSuccess = false;
         try {
-          await _apiClient.dio.post('/offline/sync', data: {
-            'payload': rawData,
-            'signature': payload['signature'],
-          });
+          await _apiClient.dio.post('/offline/sync', data: payloadJson);
           syncSuccess = true;
         } catch (e) {
-          // Erreur réseau ou API
+          // Erreur réseau ou API, on continue hors ligne
         }
 
         // Sauvegarde locale du reçu
         final existingReceiptsStr = await _storage.read(key: 'offline_receipts') ?? '[]';
         final List<dynamic> receipts = jsonDecode(existingReceiptsStr);
-        receipts.add(payload);
+        receipts.add(payloadJson);
         await _storage.write(key: 'offline_receipts', value: jsonEncode(receipts));
 
         if (mounted) {
-          _showSuccess(payload['amount'].toString(), syncSuccess);
+          _showSuccess(payload.amount.toString(), syncSuccess);
         }
-      } else {
-        throw Exception('Payload invalide');
+      } catch (e) {
+        throw Exception('Payload invalide: $e');
       }
     } catch (e) {
       if (mounted) {

@@ -14,7 +14,9 @@ import '../widgets/send_again_section.dart';
 import '../widgets/recent_activity_list.dart';
 import '../widgets/offline_escrow_banner.dart';
 import '../pages/allocate_offline_budget_page.dart';
-import '../../../transfer/presentation/pages/receive_offline_page.dart';
+import '../../../transfer/presentation/pages/request_offline_payment_page.dart';
+import '../../../transfer/presentation/pages/scan_contact_page.dart';
+import 'offline_sync_queue_page.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -121,26 +123,58 @@ class _WalletPageState extends State<WalletPage> {
             const SizedBox(height: AppSpacing.sm),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
-              child: SizedBox(
-                width: double.infinity,
-                child: TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ReceiveOfflinePage()),
-                    );
-                  },
-                  icon: Icon(LucideIcons.qrCode, color: const Color(0xFFB5E48C)),
-                  label: Text(
-                    'Encaisser un paiement hors ligne',
-                    style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFFB5E48C)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Paiement Hors Ligne',
+                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
                   ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFF2D2E33).withOpacity(0.3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildOfflineActionCard(
+                          context,
+                          title: 'Encaisser',
+                          icon: LucideIcons.qrCode,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const RequestOfflinePaymentPage()),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _buildOfflineActionCard(
+                          context,
+                          title: 'Payer',
+                          icon: LucideIcons.camera,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ScanContactPage()),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _buildOfflineActionCard(
+                          context,
+                          title: 'Synchro',
+                          icon: LucideIcons.uploadCloud,
+                          isAccent: true,
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const OfflineSyncQueuePage()),
+                            );
+                            _fetchBalance();
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -179,6 +213,45 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOfflineActionCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isAccent = false,
+  }) {
+    return Material(
+      color: const Color(0xFF1F2228),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isAccent ? const Color(0xFF94A3B8) : const Color(0xFFB5E48C),
+                size: 24,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: isAccent ? const Color(0xFF94A3B8) : const Color(0xFFB5E48C),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );

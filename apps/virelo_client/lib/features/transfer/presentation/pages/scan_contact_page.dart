@@ -1,9 +1,17 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/nfc_manager_android.dart' as android_tags;
+import 'package:nfc_manager/nfc_manager_ios.dart' as ios_tags;
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
+import 'package:virelo_core/network/api_client.dart';
+import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/crypto/offline_crypto_service.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import 'show_offline_proof_page.dart';
 
 class ScanContactPage extends StatefulWidget {
   const ScanContactPage({super.key});
@@ -14,31 +22,69 @@ class ScanContactPage extends StatefulWidget {
 
 class _ScanContactPageState extends State<ScanContactPage> {
   bool _isNfcAvailable = false;
+  bool _isProcessingOfflinePayment = false;
   final MobileScannerController _cameraController = MobileScannerController();
+  late final OfflineCryptoService _offlineCryptoService;
 
   @override
   void initState() {
     super.initState();
+    final authService = AuthService(ApiClient());
+    _offlineCryptoService = OfflineCryptoService(OfflineStorageService(authService));
     _initNfc();
   }
 
   Future<void> _initNfc() async {
-    bool isAvailable = await NfcManager.instance.isAvailable();
-    setState(() {
-      _isNfcAvailable = isAvailable;
-    });
+    bool isAvailable = false;
+    try {
+      isAvailable = await NfcManager.instance.isAvailable();
+    } catch (e) {
+      // Ignore if NFC is not supported on this device
+    }
+
+    if (mounted) {
+      setState(() {
+        _isNfcAvailable = isAvailable;
+      });
+    }
 
     if (isAvailable) {
-      NfcManager.instance.startSession(
-        pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693, NfcPollingOption.iso18092},
-        onDiscovered: (NfcTag tag) async {
-        // En vrai, il faudrait lire le NdefRecord et extraire le numéro
-        // Pour le PoC, on va simuler une lecture réussie après détection du tag
-        NfcManager.instance.stopSession();
-        if (mounted) {
-          Navigator.pop(context, "0769303718"); // Dummy number for PoC
-        }
-      });
+      try {
+        NfcManager.instance.startSession(
+          pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693, NfcPollingOption.iso18092},
+          onDiscovered: (NfcTag tag) async {
+            NfcManager.instance.stopSession();
+            try {
+              final ndefAndroid = android_tags.NdefAndroid.from(tag);
+              final ndefIos = ios_tags.NdefIos.from(tag);
+              final cachedMessage = ndefAndroid?.cachedNdefMessage ?? ndefIos?.cachedNdefMessage;
+
+              if (cachedMessage != null) {
+                for (var record in cachedMessage.records) {
+                  // Assuming the payload is a text record or URI
+                  final payloadStr = String.fromCharCodes(record.payload);
+                  final uri = Uri.tryParse(payloadStr);
+                  
+                  if (uri != null && uri.scheme == 'virelo' && uri.host == 'offline_pay') {
+                    final merchantId = uri.queryParameters['merchantId'] ?? 'UNKNOWN';
+                    final amountStr = uri.queryParameters['amount'] ?? '0';
+                    final amount = double.tryParse(amountStr) ?? 0.0;
+                    
+                    if (mounted) {
+                      _handleOfflinePayment(merchantId, amount);
+                    }
+                    return;
+                  }
+                }
+              }
+            } catch (e) {
+              // Failed to parse tag
+            }
+          }
+        );
+      } catch (e) {
+        // Ignore session start errors
+      }
     }
   }
 
@@ -60,12 +106,24 @@ class _ScanContactPageState extends State<ScanContactPage> {
           MobileScanner(
             controller: _cameraController,
             onDetect: (capture) {
+              if (_isProcessingOfflinePayment) return;
+              
               final List<Barcode> barcodes = capture.barcodes;
               for (final barcode in barcodes) {
                 final String? rawValue = barcode.rawValue;
                 if (rawValue != null) {
-                  // Supposons que le QR contienne virelo://pay?phone=XXXX
                   final uri = Uri.tryParse(rawValue);
+                  // Détection d'un paiement hors ligne
+                  if (uri != null && uri.scheme == 'virelo' && uri.host == 'offline_pay') {
+                    final merchantId = uri.queryParameters['merchantId'] ?? 'UNKNOWN';
+                    final amountStr = uri.queryParameters['amount'] ?? '0';
+                    final amount = double.tryParse(amountStr) ?? 0.0;
+                    
+                    _handleOfflinePayment(merchantId, amount);
+                    return;
+                  }
+                  
+                  // Supposons que le QR contienne virelo://pay?phone=XXXX
                   if (uri != null && uri.queryParameters.containsKey('phone')) {
                     Navigator.pop(context, uri.queryParameters['phone']);
                     return;
@@ -117,9 +175,77 @@ class _ScanContactPageState extends State<ScanContactPage> {
                 ],
               ),
             ),
-          )
+          ),
+          
+          if (_isProcessingOfflinePayment)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Génération du paiement sécurisé...',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleOfflinePayment(String merchantId, double amount) async {
+    if (!mounted) return;
+    setState(() {
+      _isProcessingOfflinePayment = true;
+    });
+
+    try {
+      await _offlineCryptoService.initializeKeys();
+      
+      final authService = AuthService(ApiClient());
+      final clientId = await authService.getUserId();
+      
+      if (clientId == null || clientId.isEmpty) {
+        throw Exception("Vous devez être connecté pour effectuer un paiement hors ligne.");
+      }
+
+      final payload = await _offlineCryptoService.generateSignedPayload(
+        clientId: clientId,
+        merchantId: merchantId,
+        amount: amount,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isProcessingOfflinePayment = false;
+        });
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ShowOfflineProofPage(
+              beneficiaryName: "Marchand $merchantId",
+              amount: amount.toString(),
+              signedPayload: jsonEncode(payload.toJson()),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur hors ligne: $e')),
+        );
+        setState(() {
+          _isProcessingOfflinePayment = false;
+        });
+      }
+    }
   }
 }

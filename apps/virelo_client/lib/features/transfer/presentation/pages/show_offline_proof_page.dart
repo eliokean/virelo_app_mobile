@@ -3,11 +3,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
+import 'dart:async';
 
-class ShowOfflineProofPage extends StatelessWidget {
+class ShowOfflineProofPage extends StatefulWidget {
   final String beneficiaryName;
   final String amount;
-  final String signedPayload; // JSON string with signature
+  final String signedPayload;
 
   const ShowOfflineProofPage({
     super.key,
@@ -15,6 +16,30 @@ class ShowOfflineProofPage extends StatelessWidget {
     required this.amount,
     required this.signedPayload,
   });
+
+  @override
+  State<ShowOfflineProofPage> createState() => _ShowOfflineProofPageState();
+}
+
+class _ShowOfflineProofPageState extends State<ShowOfflineProofPage> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Ferme la page automatiquement après 40 secondes
+    _timer = Timer(const Duration(seconds: 40), () {
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +65,7 @@ class ShowOfflineProofPage extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Demandez à $beneficiaryName de scanner ce code pour recevoir les $amount FCFA',
+                'Demandez à ${widget.beneficiaryName} de scanner ce code pour recevoir les ${widget.amount} FCFA',
                 style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
@@ -52,7 +77,7 @@ class ShowOfflineProofPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: QrImageView(
-                  data: signedPayload,
+                  data: widget.signedPayload,
                   version: QrVersions.auto,
                   size: 250.0,
                   backgroundColor: Colors.white,
