@@ -17,7 +17,8 @@ import '../pages/allocate_offline_budget_page.dart';
 import '../../../transfer/presentation/pages/request_offline_payment_page.dart';
 import '../../../transfer/presentation/pages/scan_contact_page.dart';
 import 'offline_sync_queue_page.dart';
-
+import 'offline_client_history_page.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
 
@@ -27,30 +28,68 @@ class WalletPage extends StatefulWidget {
 
 class _WalletPageState extends State<WalletPage> {
   late final WalletService _walletService;
+  late final OfflineStorageService _offlineStorage;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  
+  String _userName = "";
   String _balance = "0";
+  double _offlineBudget = 0.0;
+  List<dynamic> _activities = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     final apiClient = ApiClient();
-    _walletService = WalletService(apiClient, AuthService(apiClient));
-    _loadCachedBalance();
+    final authService = AuthService(apiClient);
+    _walletService = WalletService(apiClient, authService);
+    _offlineStorage = OfflineStorageService(authService);
+    
+    _loadCachedData();
     _fetchBalance();
+    _fetchOfflineBudget();
   }
 
-  Future<void> _loadCachedBalance() async {
+  Future<void> _loadCachedData() async {
     try {
-      final cached = await _storage.read(key: 'cached_balance');
-      if (cached != null && mounted) {
+      final name = await _storage.read(key: 'user_name') ?? "Client";
+      final cachedBal = await _storage.read(key: 'cached_balance');
+      final offlineHistory = await _offlineStorage.getOfflineTransactions();
+      
+      if (mounted) {
         setState(() {
-          _balance = cached;
+          _userName = name;
+          if (cachedBal != null) _balance = cachedBal;
+          _activities = offlineHistory;
           _isLoading = false;
         });
       }
     } catch (_) {}
   }
+
+  Future<void> _fetchOfflineBudget() async {
+    try {
+      double budget = 0.0;
+      
+      try {
+        final apiData = await _walletService.getOfflineBalance();
+        final serverBalance = double.tryParse(apiData['offline_balance'].toString()) ?? 0.0;
+        await _offlineStorage.saveOfflineBudget(serverBalance);
+        budget = serverBalance;
+      } catch (e) {
+        debugPrint('==== ECHEC SYNC SERVER, FALLBACK LOCAL: $e ====');
+        budget = await _offlineStorage.getOfflineBudget();
+      }
+
+      if (mounted) {
+        setState(() {
+          _offlineBudget = budget;
+        });
+      }
+    } catch (_) {}
+  }
+
+
 
   Future<void> _fetchBalance() async {
     try {
@@ -96,7 +135,7 @@ class _WalletPageState extends State<WalletPage> {
                 child: Column(
                   children: [
                     const SizedBox(height: AppSpacing.md),
-                    const WalletHeader(),
+                    WalletHeader(userName: _userName),
                     BalanceHeroCard(balance: _balance, isLoading: _isLoading),
                     const SizedBox(height: AppSpacing.xxl),
                   ],
@@ -109,6 +148,7 @@ class _WalletPageState extends State<WalletPage> {
               padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.md),
               child: WalletActionsBar(onRefresh: _fetchBalance),
             ),
+            const SizedBox(height: AppSpacing.lg),
             OfflineEscrowBanner(
               onTap: () async {
                 final result = await Navigator.push(
@@ -117,6 +157,7 @@ class _WalletPageState extends State<WalletPage> {
                 );
                 if (result == true) {
                   _fetchBalance();
+                  _fetchOfflineBudget();
                 }
               },
             ),
@@ -126,9 +167,34 @@ class _WalletPageState extends State<WalletPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Paiement Hors Ligne',
-                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Paiement Hors Ligne',
+                        style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
+                      ),
+                      GestureDetector(
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const OfflineClientHistoryPage()),
+                          );
+                          _fetchOfflineBudget();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2C3138),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$_offlineBudget FCFA',
+                            style: AppTextStyles.labelSmall.copyWith(color: const Color(0xFFB5E48C)),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Row(
@@ -193,18 +259,22 @@ class _WalletPageState extends State<WalletPage> {
                     top: Radius.circular(40),
                   ),
                   child: RefreshIndicator(
-                    onRefresh: _fetchBalance,
+                    onRefresh: () async {
+                      await _fetchBalance();
+                      await _fetchOfflineBudget();
+                      await _loadCachedData(); // Recharger depuis Hive aussi
+                    },
                     color: const Color(0xFF161A22),
-                    child: const SingleChildScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.all(AppSpacing.screenH),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSpacing.screenH),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SendAgainSection(),
-                          SizedBox(height: AppSpacing.xxl),
-                          RecentActivityList(),
-                          SizedBox(height: AppSpacing.huge),
+                          // SendAgainSection(),
+                          // SizedBox(height: AppSpacing.xxl),
+                          RecentActivityList(activities: _activities, isLoading: _isLoading),
+                          const SizedBox(height: AppSpacing.huge),
                         ],
                       ),
                     ),

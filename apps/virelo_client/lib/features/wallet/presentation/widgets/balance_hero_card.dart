@@ -134,36 +134,6 @@ class _BalanceHeroCardState extends State<BalanceHeroCard> {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          // Variation Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF8DC973), // Green from the image
-              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.trending_up, color: Colors.white, size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  '+2.10%',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Solde multi-devises estimé, sécurisé',
-            style: AppTextStyles.labelSmall.copyWith(
-              color: const Color(0xFF4A5168),
-            ),
-          ),
         ],
       ),
     );

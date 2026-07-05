@@ -26,8 +26,13 @@ class AuthService {
       final data = response.data;
       if (data != null && data['token'] != null) {
         await _apiClient.saveToken(data['token']);
-        if (data['user'] != null && data['user']['id'] != null) {
-          await _secureStorage.write(key: 'user_id', value: data['user']['id'].toString());
+        if (data['user'] != null) {
+          if (data['user']['id'] != null) {
+            await _secureStorage.write(key: 'user_id', value: data['user']['id'].toString());
+          }
+          if (data['user']['name'] != null) {
+            await _secureStorage.write(key: 'user_name', value: data['user']['name'].toString());
+          }
         }
       }
       return data;
@@ -52,8 +57,13 @@ class AuthService {
       final data = response.data;
       if (data != null && data['token'] != null) {
         await _apiClient.saveToken(data['token']);
-        if (data['user'] != null && data['user']['id'] != null) {
-          await _secureStorage.write(key: 'user_id', value: data['user']['id'].toString());
+        if (data['user'] != null) {
+          if (data['user']['id'] != null) {
+            await _secureStorage.write(key: 'user_id', value: data['user']['id'].toString());
+          }
+          if (data['user']['name'] != null) {
+            await _secureStorage.write(key: 'user_name', value: data['user']['name'].toString());
+          }
         }
       }
       return data;
@@ -71,11 +81,16 @@ class AuthService {
       await _apiClient.clearToken();
       await _secureStorage.delete(key: 'user_pin');
       await _secureStorage.delete(key: 'user_id');
+      await _secureStorage.delete(key: 'user_name');
     }
   }
 
   Future<String?> getUserId() async {
     return await _secureStorage.read(key: 'user_id');
+  }
+
+  Future<String?> getUserName() async {
+    return await _secureStorage.read(key: 'user_name');
   }
 
   // ── GESTION DU PIN LOCAL ─────────────────────────────────────

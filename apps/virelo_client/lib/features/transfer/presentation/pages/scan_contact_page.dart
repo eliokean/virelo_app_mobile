@@ -215,11 +215,26 @@ class _ScanContactPageState extends State<ScanContactPage> {
         throw Exception("Vous devez être connecté pour effectuer un paiement hors ligne.");
       }
 
+      final offlineStorage = OfflineStorageService(authService);
+      final currentBudget = await offlineStorage.getOfflineBudget();
+      
+      if (currentBudget < amount) {
+        throw Exception("Solde hors ligne insuffisant (Reste : $currentBudget FCFA)");
+      }
+
       final payload = await _offlineCryptoService.generateSignedPayload(
         clientId: clientId,
         merchantId: merchantId,
         amount: amount,
       );
+
+      // Déduire le solde et enregistrer la transaction
+      await offlineStorage.deductOfflineBudget(amount);
+      await offlineStorage.saveOfflineTransaction({
+        'merchantId': merchantId,
+        'amount': amount,
+        'type': 'payment_sent',
+      });
 
       if (mounted) {
         setState(() {

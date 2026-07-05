@@ -4,6 +4,7 @@ class OfflineAuthorizationPayload {
   final double amount;
   final int sequenceNumber;
   final String timestamp;
+  final String uuid;
   final String clientPublicKey;
   final String clientSignature;
 
@@ -13,6 +14,7 @@ class OfflineAuthorizationPayload {
     required this.amount,
     required this.sequenceNumber,
     required this.timestamp,
+    required this.uuid,
     required this.clientPublicKey,
     required this.clientSignature,
   });
@@ -23,6 +25,7 @@ class OfflineAuthorizationPayload {
         'amount': amount,
         'sequenceNumber': sequenceNumber,
         'timestamp': timestamp,
+        'uuid': uuid,
         'clientPublicKey': clientPublicKey,
         'clientSignature': clientSignature,
       };
@@ -34,6 +37,7 @@ class OfflineAuthorizationPayload {
       amount: (json['amount'] as num).toDouble(),
       sequenceNumber: json['sequenceNumber'] as int,
       timestamp: json['timestamp'] as String,
+      uuid: json['uuid'] as String? ?? '', // Support retrocompatibilité si absent
       clientPublicKey: json['clientPublicKey'] as String,
       clientSignature: json['clientSignature'] as String,
     );
@@ -41,6 +45,6 @@ class OfflineAuthorizationPayload {
 
   /// Retourne les données brutes sous forme de String pour la signature
   String getDataToSign() {
-    return '$clientId:$merchantId:$amount:$sequenceNumber:$timestamp:$clientPublicKey';
+    return '$clientId:$merchantId:$amount:$sequenceNumber:$timestamp:$uuid:$clientPublicKey';
   }
 }

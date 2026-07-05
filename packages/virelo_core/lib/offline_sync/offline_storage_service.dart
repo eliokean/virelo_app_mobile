@@ -1,10 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:virelo_core/services/auth_service.dart';
 
 class OfflineStorageService {
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final Box _box = Hive.box('virelo_offline_box');
   final AuthService _authService;
 
   static const String _keyPrivateKey = 'offline_private_key';
@@ -20,9 +21,9 @@ class OfflineStorageService {
     if (userId == null) throw Exception("Utilisateur non authentifié");
     
     final key = '${_keySequenceNumber}_$userId';
-    final val = await _secureStorage.read(key: key);
+    final val = _box.get(key);
     if (val == null) return 0;
-    return int.tryParse(val) ?? 0;
+    return int.tryParse(val.toString()) ?? 0;
   }
 
   Future<int> incrementAndGetSequenceNumber() async {
@@ -32,7 +33,7 @@ class OfflineStorageService {
     final current = await getCurrentSequenceNumber();
     final next = current + 1;
     final key = '${_keySequenceNumber}_$userId';
-    await _secureStorage.write(key: key, value: next.toString());
+    await _box.put(key, next.toString());
     return next;
   }
 
@@ -46,27 +47,21 @@ class OfflineStorageService {
     final publicKey = await keyPair.extractPublicKey();
     final publicKeyBytes = publicKey.bytes;
 
-    await _secureStorage.write(
-      key: '${_keyPrivateKey}_$userId',
-      value: base64Encode(privateKeyBytes),
-    );
-    await _secureStorage.write(
-      key: '${_keyPublicKey}_$userId',
-      value: base64Encode(publicKeyBytes),
-    );
+    await _box.put('${_keyPrivateKey}_$userId', base64Encode(privateKeyBytes));
+    await _box.put('${_keyPublicKey}_$userId', base64Encode(publicKeyBytes));
   }
 
   Future<SimpleKeyPair?> getKeyPair(Ed25519 algorithm) async {
     final userId = await _authService.getUserId();
     if (userId == null) return null;
 
-    final privateKeyStr = await _secureStorage.read(key: '${_keyPrivateKey}_$userId');
-    final publicKeyStr = await _secureStorage.read(key: '${_keyPublicKey}_$userId');
+    final privateKeyStr = _box.get('${_keyPrivateKey}_$userId');
+    final publicKeyStr = _box.get('${_keyPublicKey}_$userId');
 
     if (privateKeyStr == null || publicKeyStr == null) return null;
 
-    final privateKeyBytes = base64Decode(privateKeyStr);
-    final publicKeyBytes = base64Decode(publicKeyStr);
+    final privateKeyBytes = base64Decode(privateKeyStr.toString());
+    final publicKeyBytes = base64Decode(publicKeyStr.toString());
 
     return SimpleKeyPairData(
       privateKeyBytes,
@@ -78,6 +73,68 @@ class OfflineStorageService {
   Future<String?> getPublicKeyBase64() async {
     final userId = await _authService.getUserId();
     if (userId == null) return null;
-    return await _secureStorage.read(key: '${_keyPublicKey}_$userId');
+    return _box.get('${_keyPublicKey}_$userId')?.toString();
+  }
+
+  // --- Gestion du Solde Hors Ligne (Côté Client) ---
+
+  Future<void> saveOfflineBudget(double amount) async {
+    final userId = await _authService.getUserId();
+    debugPrint('==== SAVING OFFLINE BUDGET: userId=$userId, amount=$amount ====');
+    if (userId == null) return;
+    await _box.put('offline_budget_$userId', amount.toString());
+  }
+
+  Future<double> getOfflineBudget() async {
+    final userId = await _authService.getUserId();
+    debugPrint('==== GETTING OFFLINE BUDGET: userId=$userId ====');
+    if (userId == null) return 0.0;
+    final val = _box.get('offline_budget_$userId');
+    debugPrint('==== OFFLINE BUDGET RAW VALUE: $val ====');
+    if (val == null) return 0.0;
+    return double.tryParse(val.toString()) ?? 0.0;
+  }
+
+  Future<void> deductOfflineBudget(double amount) async {
+    final current = await getOfflineBudget();
+    if (current >= amount) {
+      await saveOfflineBudget(current - amount);
+    } else {
+      throw Exception('Solde hors ligne insuffisant');
+    }
+  }
+
+  // --- Gestion de l'historique local ---
+
+  Future<void> saveOfflineTransaction(Map<String, dynamic> transaction) async {
+    final userId = await _authService.getUserId();
+    if (userId == null) return;
+    
+    final key = 'offline_history_$userId';
+    final currentHistoryStr = _box.get(key) ?? '[]';
+    final List<dynamic> history = jsonDecode(currentHistoryStr.toString());
+    
+    // Ajoute la date courante si non présente
+    transaction['date'] = DateTime.now().toIso8601String();
+    
+    history.add(transaction);
+    await _box.put(key, jsonEncode(history));
+  }
+
+  Future<List<Map<String, dynamic>>> getOfflineTransactions() async {
+    final userId = await _authService.getUserId();
+    if (userId == null) return [];
+    
+    final key = 'offline_history_$userId';
+    final historyStr = _box.get(key) ?? '[]';
+    final List<dynamic> history = jsonDecode(historyStr.toString());
+    
+    return history.map((e) => e as Map<String, dynamic>).toList().reversed.toList();
+  }
+
+  Future<void> clearOfflineTransactions() async {
+    final userId = await _authService.getUserId();
+    if (userId == null) return;
+    await _box.delete('offline_history_$userId');
   }
 }

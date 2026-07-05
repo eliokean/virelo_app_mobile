@@ -47,6 +47,7 @@ dependencies:
   nfc_manager: ^4.2.1
   crypto: ^3.0.7
   dart_jsonwebtoken: ^3.4.1
+  hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:

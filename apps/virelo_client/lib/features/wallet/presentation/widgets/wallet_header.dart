@@ -7,7 +7,9 @@ import 'package:virelo_core/network/api_client.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 
 class WalletHeader extends StatelessWidget {
-  const WalletHeader({super.key});
+  final String userName;
+
+  const WalletHeader({super.key, required this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +23,7 @@ class WalletHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Salut Ben !',
+                  'Salut ${userName.split(' ').first} !',
                   style: AppTextStyles.headlineMedium.copyWith(
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF161A22),

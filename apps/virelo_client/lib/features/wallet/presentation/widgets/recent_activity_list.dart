@@ -8,57 +8,15 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-class RecentActivityList extends StatefulWidget {
-  const RecentActivityList({super.key});
+class RecentActivityList extends StatelessWidget {
+  final List<dynamic> activities;
+  final bool isLoading;
 
-  @override
-  State<RecentActivityList> createState() => _RecentActivityListState();
-}
-
-class _RecentActivityListState extends State<RecentActivityList> {
-  final ApiClient _apiClient = ApiClient();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  List<dynamic> _activities = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCachedHistory();
-    _fetchHistory();
-  }
-
-  Future<void> _loadCachedHistory() async {
-    try {
-      final cached = await _storage.read(key: 'cached_history');
-      if (cached != null && mounted) {
-        setState(() {
-          _activities = jsonDecode(cached);
-          _isLoading = false;
-        });
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _fetchHistory() async {
-    try {
-      final response = await _apiClient.dio.get('/wallets/history');
-      await _storage.write(key: 'cached_history', value: jsonEncode(response.data));
-      if (mounted) {
-        setState(() {
-          _activities = response.data;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        debugPrint('Erreur lors de la récupération de l\'historique: $e');
-      }
-    }
-  }
+  const RecentActivityList({
+    super.key,
+    required this.activities,
+    this.isLoading = false,
+  });
 
   String _formatDate(String dateString) {
     try {
@@ -75,8 +33,10 @@ class _RecentActivityListState extends State<RecentActivityList> {
     }
   }
 
+
+
   IconData _getIconForType(String type, bool isNegative) {
-    if (type == 'c2c_transfer') {
+    if (type == 'c2c_transfer' || type == 'offline') {
       return isNegative ? LucideIcons.arrowUpRight : LucideIcons.arrowDownLeft;
     }
     return LucideIcons.shoppingBag;
@@ -115,26 +75,27 @@ class _RecentActivityListState extends State<RecentActivityList> {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        if (_isLoading)
+        if (isLoading)
           const Center(child: CircularProgressIndicator(color: Color(0xFFB5E48C)))
-        else if (_activities.isEmpty)
+        else if (activities.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
             child: Text('Aucune activité récente.'),
           )
         else
-          ..._activities.map((activity) {
-            final isNegative = activity['is_negative'] ?? false;
+          ...activities.take(5).map((activity) { // On prend les 5 plus récentes max
+            final isNegative = activity['is_negative'] ?? true; // Défaut débit (scan paiement)
             final amountStr = '${isNegative ? '-' : '+'}${activity['amount']} FCFA';
             
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: _buildActivityItem(
-                icon: _getIconForType(activity['type'], isNegative),
-                title: activity['title'] ?? 'Transaction',
-                subtitle: _formatDate(activity['date']),
+                icon: _getIconForType(activity['type'] ?? 'offline', isNegative),
+                title: activity['title'] ?? (activity['merchantId'] != null ? 'Paiement Hors Ligne' : 'Transaction'),
+                subtitle: _formatDate(activity['date'] ?? activity['timestamp'] ?? DateTime.now().toIso8601String()),
                 amount: amountStr,
                 isNegative: isNegative,
+                isPending: activity['uuid'] != null, // C'est une transaction offline si UUID est présent
               ),
             );
           }),
@@ -148,6 +109,7 @@ class _RecentActivityListState extends State<RecentActivityList> {
     required String subtitle,
     required String amount,
     required bool isNegative,
+    bool isPending = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -167,14 +129,14 @@ class _RecentActivityListState extends State<RecentActivityList> {
         children: [
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF5F5F5), // Light grey
+            decoration: BoxDecoration(
+              color: isPending ? const Color(0xFFFFF3E0) : const Color(0xFFF5F5F5),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              icon,
+              isPending ? LucideIcons.clock : icon,
               size: 24,
-              color: const Color(0xFF161A22),
+              color: isPending ? const Color(0xFFE65100) : const Color(0xFF161A22),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -190,9 +152,10 @@ class _RecentActivityListState extends State<RecentActivityList> {
                   ),
                 ),
                 Text(
-                  subtitle,
+                  isPending ? "En attente de synchro" : subtitle,
                   style: AppTextStyles.labelSmall.copyWith(
-                    color: const Color(0xFF8B93A8),
+                    color: isPending ? const Color(0xFFE65100) : const Color(0xFF8B93A8),
+                    fontWeight: isPending ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               ],

@@ -19,6 +19,15 @@ class WalletService {
     }
   }
 
+  Future<Map<String, dynamic>> getOfflineBalance() async {
+    try {
+      final response = await _apiClient.dio.get('/offline/balance');
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Erreur lors de la récupération du solde hors ligne');
+    }
+  }
+
   Future<Map<String, dynamic>> topUp(double amount, String provider) async {
     try {
       final response = await _apiClient.dio.post(

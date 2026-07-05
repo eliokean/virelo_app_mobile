@@ -6,6 +6,8 @@ import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
 
 class AllocateOfflineBudgetPage extends StatefulWidget {
   const AllocateOfflineBudgetPage({super.key});
@@ -56,6 +58,10 @@ class _AllocateOfflineBudgetPageState extends State<AllocateOfflineBudgetPage> {
       final data = response.data;
       await _storage.write(key: 'offline_token', value: data['offline_token'].toString());
       await _storage.write(key: 'escrow_secret', value: data['escrow_secret']);
+      
+      final offlineStorage = OfflineStorageService(AuthService(_apiClient));
+      await offlineStorage.saveOfflineBudget(amountDouble);
+      await offlineStorage.clearOfflineTransactions();
       
       if (mounted) {
         setState(() => _isAllocating = false);

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import 'package:cryptography/cryptography.dart';
 import '../offline_sync/offline_authorization_payload.dart';
 import '../offline_sync/offline_storage_service.dart';
@@ -37,6 +38,7 @@ class OfflineCryptoService {
     final sequenceNumber = await _storageService.incrementAndGetSequenceNumber();
     final timestamp = DateTime.now().toIso8601String();
     final publicKeyBase64 = await getPublicKey() ?? '';
+    final payloadUuid = const Uuid().v4();
 
     // On prépare le payload sans la signature
     final payloadWithoutSig = OfflineAuthorizationPayload(
@@ -45,6 +47,7 @@ class OfflineCryptoService {
       amount: amount,
       sequenceNumber: sequenceNumber,
       timestamp: timestamp,
+      uuid: payloadUuid,
       clientPublicKey: publicKeyBase64,
       clientSignature: '', // Sera rempli juste après
     );
@@ -60,6 +63,7 @@ class OfflineCryptoService {
       amount: amount,
       sequenceNumber: sequenceNumber,
       timestamp: timestamp,
+      uuid: payloadUuid,
       clientPublicKey: publicKeyBase64,
       clientSignature: base64Encode(signature.bytes),
     );
