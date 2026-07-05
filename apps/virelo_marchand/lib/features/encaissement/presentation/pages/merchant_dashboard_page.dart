@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
@@ -9,6 +10,10 @@ import 'package:virelo_core/services/merchant_service.dart';
 import '../../../../config/routes/route_names.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/offline_sync_service.dart';
+import '../widgets/merchant_header.dart';
+import '../widgets/merchant_balance_card.dart';
+import '../widgets/merchant_activity_list.dart';
+import 'withdrawal_page.dart';
 
 class MerchantDashboardPage extends StatefulWidget {
   const MerchantDashboardPage({super.key});
@@ -25,6 +30,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
   String _merchantName = "Chargement...";
   List<dynamic> _transactions = [];
   int _pendingSyncCount = 0;
+  double _pendingAmount = 0;
   bool _isSyncing = false;
 
   @override
@@ -39,6 +45,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     setState(() => _isLoading = true);
     try {
       final pendingCount = await _offlineSyncService.getPendingCount();
+      final pendingAmount = await _offlineSyncService.getPendingAmount();
       final statsResponse = await _merchantService.getStats();
       final statsData = statsResponse['data'] ?? statsResponse;
       
@@ -56,16 +63,19 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
               : "0";
           _transactions = txData;
           _pendingSyncCount = pendingCount;
+          _pendingAmount = pendingAmount;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         final pendingCount = await _offlineSyncService.getPendingCount();
+        final pendingAmount = await _offlineSyncService.getPendingAmount();
         setState(() {
           _merchantName = "Boutique";
           _balance = "0";
           _pendingSyncCount = pendingCount;
+          _pendingAmount = pendingAmount;
           _isLoading = false;
         });
       }
@@ -103,222 +113,198 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF131517), // Premium Dark
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          _merchantName,
-          style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: AppSpacing.md),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1F2228),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(LucideIcons.refreshCw, color: Colors.white),
-              onPressed: _loadDashboardData,
-            ),
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
       ),
-      body: SafeArea(
-        child: _isLoading 
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : RefreshIndicator(
-              onRefresh: _loadDashboardData,
-              color: AppColors.accent,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF161A22), // Dark middle section
+        body: Column(
+          children: [
+            // Top Light Section
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFE9E9F2),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(40),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: AppSpacing.md),
-                    // Hero Card (Recettes)
-                    _buildHeroCard(),
-                    
-                    if (_pendingSyncCount > 0) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      _buildSyncBanner(),
-                    ],
-
-                    const SizedBox(height: AppSpacing.xl),
-                    
-                    // Actions rapides
-                    Text(
-                      'Actions',
-                      style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildQuickActionCard(
-                            icon: LucideIcons.arrowDownLeft,
-                            title: 'Encaisser',
-                            color: const Color(0xFFB5E48C), // Accent green
-                            onTap: () {
-                              context.pushNamed(RouteNames.receivePayment).then((_) {
-                                // Rafraîchir les données au retour
-                                _loadDashboardData();
-                              });
-                            },
+                    MerchantHeader(merchantName: _merchantName),
+                    MerchantBalanceCard(
+                      balance: _balance, 
+                      isLoading: _isLoading,
+                      onWithdrawal: () async {
+                        final shouldRefresh = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WithdrawalPage(
+                              currentBalance: double.tryParse(_balance) ?? 0,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: _buildQuickActionCard(
-                            icon: LucideIcons.history,
-                            title: 'Historique',
-                            color: const Color(0xFF94A3B8), // Soft grey/blue
-                            onTap: () => context.pushNamed(RouteNames.history),
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: AppSpacing.xxl),
-                    
-                    // Transactions Récentes
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Dernières ventes',
-                          style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-                        ),
-                        TextButton(
-                          onPressed: () => context.pushNamed(RouteNames.history),
-                          child: Text(
-                            'Voir tout',
-                            style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFFB5E48C)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (_transactions.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.xl),
-                          child: Text(
-                            'Aucune vente récente.',
-                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                          ),
-                        ),
-                      )
-                    else
-                      ..._transactions.map((tx) {
-                        final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-                        final isIncome = true; // Pour l'instant, les marchands ne font qu'encaisser
-                        
-                        // Parse la date et formate l'heure
-                        String timeStr = "";
-                        if (tx['created_at'] != null) {
-                          try {
-                            final date = DateTime.parse(tx['created_at']).toLocal();
-                            timeStr = DateFormat('HH:mm').format(date);
-                          } catch (_) {}
-                        }
-                        
-                        return _buildRecentTransaction(
-                          'Client Virelo',
-                          '+ ${amount.toStringAsFixed(0)} XOF',
-                          timeStr,
-                          isIncome
                         );
-                      }),
+                        if (shouldRefresh == true) {
+                          _loadDashboardData();
+                        }
+                      },
+                    ),
                     const SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
               ),
             ),
+            
+            // Middle Dark Section (Actions)
+            const SizedBox(height: AppSpacing.lg),
+            
+            // Bannière de Sync si besoin
+            if (_pendingSyncCount > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+                child: _buildSyncBanner(),
+              ),
+              
+            if (_pendingSyncCount > 0)
+              const SizedBox(height: AppSpacing.md),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Actions',
+                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildOfflineActionCard(
+                          context,
+                          title: 'Encaisser (Scan)',
+                          icon: LucideIcons.qrCode,
+                          onTap: () {
+                            context.pushNamed(RouteNames.receivePayment).then((_) {
+                              _loadDashboardData();
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _buildOfflineActionCard(
+                          context,
+                          title: 'Générer Facture',
+                          icon: LucideIcons.receipt,
+                          onTap: () {
+                            // Implémentation future (QR statique marchand)
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _buildOfflineActionCard(
+                          context,
+                          title: 'Synchro',
+                          icon: LucideIcons.uploadCloud,
+                          isAccent: true,
+                          onTap: _syncOfflineTransactions,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // Bottom White Section
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(40),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(40),
+                  ),
+                  child: RefreshIndicator(
+                    onRefresh: _loadDashboardData,
+                    color: const Color(0xFF161A22),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSpacing.screenH),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          MerchantActivityList(activities: _transactions, isLoading: _isLoading),
+                          const SizedBox(height: AppSpacing.huge),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeroCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F2228),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF2C3138)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+  Widget _buildOfflineActionCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isAccent = false,
+  }) {
+    return Material(
+      color: const Color(0xFF1F2228),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFB5E48C).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(LucideIcons.trendingUp, color: Color(0xFFB5E48C), size: 20),
+              Icon(
+                icon,
+                color: isAccent ? const Color(0xFF94A3B8) : const Color(0xFFB5E48C),
+                size: 24,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(height: 8),
               Text(
-                'Solde du Wallet',
-                style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF8B93A8)),
+                title,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: isAccent ? const Color(0xFF94A3B8) : const Color(0xFFB5E48C),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            '$_balance XOF',
-            style: AppTextStyles.displayLarge.copyWith(color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.successMuted,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(LucideIcons.checkCircle, size: 14, color: AppColors.success),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Actif',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildSyncBanner() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.15),
+        color: const Color(0xFF2C3138),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.5)),
       ),
       child: Row(
         children: [
@@ -337,123 +323,25 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
               children: [
                 Text(
                   'Télécollecte en attente',
-                  style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: AppTextStyles.labelMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '$_pendingSyncCount transaction(s) hors-ligne',
-                  style: AppTextStyles.bodySmall.copyWith(color: Colors.orange[200]),
+                  '$_pendingSyncCount encaissement(s) hors-ligne',
+                  style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFF8B93A8)),
+                ),
+                Text(
+                  '+ ${_pendingAmount.toStringAsFixed(0)} FCFA à synchroniser',
+                  style: AppTextStyles.labelSmall.copyWith(color: const Color(0xFFB5E48C), fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
-          _isSyncing
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(color: Colors.orange, strokeWidth: 2),
-                )
-              : ElevatedButton(
-                  onPressed: _syncOfflineTransactions,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Envoyer', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon, 
-    required String title, 
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1F2228),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFF2C3138)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 24),
+          if (_isSyncing)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(color: Colors.orange, strokeWidth: 2),
             ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              title,
-              style: AppTextStyles.labelLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentTransaction(String title, String amount, String time, bool isIncome) {
-    final color = isIncome ? const Color(0xFFB5E48C) : const Color(0xFFE29578);
-    final icon = isIncome ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1D21),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2C3138)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.bodyLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
-                ),
-                if (time.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    time,
-                    style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFF8B93A8)),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Text(
-            amount,
-            style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
         ],
       ),
     );

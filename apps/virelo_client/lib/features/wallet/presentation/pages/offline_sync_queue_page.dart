@@ -5,6 +5,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/network/api_client.dart';
+import 'package:virelo_core/constants/api_constants.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import 'package:virelo_core/services/auth_service.dart';
 import 'package:dio/dio.dart';
 
 class OfflineSyncQueuePage extends StatefulWidget {
@@ -15,8 +18,8 @@ class OfflineSyncQueuePage extends StatefulWidget {
 }
 
 class _OfflineSyncQueuePageState extends State<OfflineSyncQueuePage> {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final ApiClient _apiClient = ApiClient();
+  late final _offlineStorage = OfflineStorageService(AuthService(_apiClient));
   
   List<Map<String, dynamic>> _receipts = [];
   bool _isLoading = true;
@@ -31,52 +34,86 @@ class _OfflineSyncQueuePageState extends State<OfflineSyncQueuePage> {
   Future<void> _loadReceipts() async {
     setState(() => _isLoading = true);
     try {
-      final existingReceiptsStr = await _storage.read(key: 'offline_receipts') ?? '[]';
-      final List<dynamic> rawList = jsonDecode(existingReceiptsStr);
-      _receipts = rawList.map((e) => e as Map<String, dynamic>).toList();
+      final history = await _offlineStorage.getOfflineTransactions();
+      _receipts = history.where((t) => t['status'] == 'PENDING_MERCHANT_SYNC').toList();
     } catch (e) {
-      debugPrint('Error loading receipts: $e');
+      debugPrint('Error loading offline receipts: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _syncAll() async {
+  Future<void> _syncStatuses() async {
     if (_receipts.isEmpty || _isSyncing) return;
     setState(() => _isSyncing = true);
 
-    List<Map<String, dynamic>> failedReceipts = [];
-    int successCount = 0;
-
-    for (var receipt in _receipts) {
-      try {
-        await _apiClient.dio.post('/offline/sync', data: receipt);
-        successCount++;
-      } catch (e) {
-        debugPrint('Error syncing receipt: $e');
-        if (e is DioException) {
-          debugPrint('DioException details: ${e.response?.data}');
-        }
-        failedReceipts.add(receipt);
+    try {
+      // 1. Tenter d'abord de pousser les transactions au serveur (Client-Push)
+      // Au cas où le marchand ne l'aurait pas encore fait.
+      for (var receipt in _receipts) {
+        if (receipt['uuid'] == null || receipt['clientSignature'] == null) continue;
+        
+        try {
+          final payload = {
+            'merchantId': receipt['merchantId'] ?? receipt['receiverId'] ?? 'ANY',
+            'amount': receipt['amount'],
+            'uuid': receipt['uuid'],
+            'sequenceNumber': receipt['sequenceNumber'],
+            'timestamp': receipt['timestamp'],
+            'clientPublicKey': receipt['clientPublicKey'],
+            'clientSignature': receipt['clientSignature'],
+          };
+          // Fire and forget, si ça existe déjà le serveur ignorera (anti-rejeu)
+          await _apiClient.dio.post('/offline/client-push', data: payload);
+        } catch (_) {} 
       }
-    }
 
-    // Save only the failed ones back to storage
-    await _storage.write(key: 'offline_receipts', value: jsonEncode(failedReceipts));
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$successCount synchronisés, ${failedReceipts.length} échecs.'),
-          backgroundColor: failedReceipts.isEmpty ? const Color(0xFFB5E48C) : Colors.orange,
-        ),
+      // 2. Vérifier le statut de toutes nos transactions en attente
+      final uuids = _receipts.map((e) => e['uuid'].toString()).toList();
+      final response = await _apiClient.dio.post(
+        ApiConstants.offlineStatus,
+        data: {'uuids': uuids},
       );
-    }
 
-    setState(() {
-      _receipts = failedReceipts;
-      _isSyncing = false;
-    });
+      final statuses = response.data['statuses'] as Map<String, dynamic>;
+      int syncedCount = 0;
+
+      for (var uuid in uuids) {
+        final status = statuses[uuid];
+        if (status == 'completed') {
+          await _offlineStorage.removeOfflineTransaction(uuid);
+          syncedCount++;
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$syncedCount transaction(s) validée(s) par le marchand.'),
+            backgroundColor: syncedCount > 0 ? const Color(0xFFB5E48C) : Colors.orange,
+            action: SnackBarAction(
+              label: 'OK', 
+              textColor: Colors.black, 
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+      
+      await _loadReceipts(); // reload
+    } catch (e) {
+      debugPrint('Error syncing offline statuses: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Erreur lors de la vérification des statuts.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
+    }
   }
 
   double get _totalAmount {
@@ -216,7 +253,7 @@ class _OfflineSyncQueuePageState extends State<OfflineSyncQueuePage> {
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isSyncing ? null : _syncAll,
+                    onPressed: _isSyncing ? null : _syncStatuses,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFB5E48C),
                       foregroundColor: const Color(0xFF131517),

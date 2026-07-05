@@ -7,6 +7,7 @@ import 'package:virelo_core/services/wallet_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../../payment/presentation/pages/generate_payment_qr_amount_page.dart';
 import '../widgets/wallet_header.dart';
 import '../widgets/balance_hero_card.dart';
 import '../widgets/wallet_actions_bar.dart';
@@ -146,102 +147,17 @@ class _WalletPageState extends State<WalletPage> {
             // Middle Dark Section (Action Bar)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.md),
-              child: WalletActionsBar(onRefresh: _fetchBalance),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            OfflineEscrowBanner(
-              onTap: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AllocateOfflineBudgetPage()),
-                );
-                if (result == true) {
+              child: WalletActionsBar(
+                onRefresh: () {
                   _fetchBalance();
                   _fetchOfflineBudget();
-                }
-              },
+                  _loadCachedData();
+                },
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Paiement Hors Ligne',
-                        style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const OfflineClientHistoryPage()),
-                          );
-                          _fetchOfflineBudget();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2C3138),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$_offlineBudget FCFA',
-                            style: AppTextStyles.labelSmall.copyWith(color: const Color(0xFFB5E48C)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildOfflineActionCard(
-                          context,
-                          title: 'Encaisser',
-                          icon: LucideIcons.qrCode,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const RequestOfflinePaymentPage()),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: _buildOfflineActionCard(
-                          context,
-                          title: 'Payer',
-                          icon: LucideIcons.camera,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const ScanContactPage()),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: _buildOfflineActionCard(
-                          context,
-                          title: 'Synchro',
-                          icon: LucideIcons.uploadCloud,
-                          isAccent: true,
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const OfflineSyncQueuePage()),
-                            );
-                            _fetchBalance();
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              child: _buildOfflinePocket(),
             ),
             const SizedBox(height: AppSpacing.lg),
 
@@ -271,8 +187,6 @@ class _WalletPageState extends State<WalletPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // SendAgainSection(),
-                          // SizedBox(height: AppSpacing.xxl),
                           RecentActivityList(activities: _activities, isLoading: _isLoading),
                           const SizedBox(height: AppSpacing.huge),
                         ],
@@ -288,41 +202,123 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
-  Widget _buildOfflineActionCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-    bool isAccent = false,
-  }) {
-    return Material(
-      color: const Color(0xFF1F2228),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
+  Widget _buildOfflinePocket() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F2228),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF2C3138)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header de la poche
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                icon,
-                color: isAccent ? const Color(0xFF94A3B8) : const Color(0xFFB5E48C),
-                size: 24,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB5E48C).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.wifiOff, color: Color(0xFFB5E48C), size: 18),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text('Poche Hors Ligne', style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: isAccent ? const Color(0xFF94A3B8) : const Color(0xFFB5E48C),
+              GestureDetector(
+                onTap: () async {
+                   await Navigator.push(context, MaterialPageRoute(builder: (_) => const OfflineClientHistoryPage()));
+                   _fetchOfflineBudget();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C3138),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text('Historique', style: AppTextStyles.labelSmall.copyWith(color: const Color(0xFF8B93A8))),
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-        ),
+          const SizedBox(height: AppSpacing.lg),
+          // Budget
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('$_offlineBudget', style: AppTextStyles.displayLarge.copyWith(color: Colors.white, fontSize: 32)),
+              const SizedBox(width: 8),
+              Text('FCFA', style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF8B93A8))),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          // Actions
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GeneratePaymentQrAmountPage())),
+                  icon: const Icon(LucideIcons.qrCode, size: 18),
+                  label: const Text('Payer', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB5E48C),
+                    foregroundColor: const Color(0xFF161A22),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                     final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const AllocateOfflineBudgetPage()));
+                     if (result == true) { _fetchBalance(); _fetchOfflineBudget(); }
+                  },
+                  icon: const Icon(LucideIcons.plus, size: 18),
+                  label: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C3138),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              IconButton(
+                onPressed: () async {
+                   await Navigator.push(context, MaterialPageRoute(builder: (_) => const OfflineSyncQueuePage()));
+                   _fetchBalance();
+                },
+                icon: const Icon(LucideIcons.uploadCloud, color: Colors.white, size: 20),
+                style: IconButton.styleFrom(
+                  backgroundColor: const Color(0xFF2C3138),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.all(14),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

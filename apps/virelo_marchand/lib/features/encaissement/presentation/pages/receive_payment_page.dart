@@ -33,9 +33,10 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
         try {
           // Decode amount from token for local UI and offline storage
           double amount = 0;
+          Map<String, dynamic> payload = {};
           try {
-            final decoded = utf8.decode(base64Decode(code));
-            final payload = jsonDecode(decoded);
+            // Dans le nouveau modèle Dual Offline, le jeton est directement le JSON du OfflineAuthorizationPayload
+            payload = jsonDecode(code);
             amount = (payload['amount'] as num).toDouble();
           } catch (e) {
             throw Exception("Format de jeton invalide");
@@ -65,8 +66,8 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
 
             // If online, proceed with normal API request
             final response = await ApiClient().dio.post(
-              ApiConstants.processOffline,
-              data: {'token': code},
+              '/offline/sync', // Nouveau endpoint Dual Offline
+              data: payload,
             );
 
             if (mounted) {

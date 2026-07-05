@@ -43,6 +43,15 @@ class OfflineSyncService {
     return (prefs.getStringList(_storageKey) ?? []).length;
   }
 
+  Future<double> getPendingAmount() async {
+    final transactions = await getPendingTransactions();
+    double total = 0;
+    for (var tx in transactions) {
+      total += (tx['amount'] as num).toDouble();
+    }
+    return total;
+  }
+
   Future<void> syncPendingTransactions() async {
     final transactions = await getPendingTransactions();
     if (transactions.isEmpty) return;

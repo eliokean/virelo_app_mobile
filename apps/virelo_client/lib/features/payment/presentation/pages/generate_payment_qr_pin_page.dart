@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
@@ -5,8 +6,9 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_pin_pad.dart';
 import 'package:virelo_core/network/api_client.dart';
-import 'package:virelo_core/services/wallet_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import 'package:virelo_core/crypto/offline_crypto_service.dart';
 import 'generate_payment_qr_display_page.dart';
 
 class GeneratePaymentQrPinPage extends StatefulWidget {
@@ -21,13 +23,13 @@ class GeneratePaymentQrPinPage extends StatefulWidget {
 class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
   String _pin = '';
   bool _isLoading = false;
-  late final WalletService _walletService;
+  late final AuthService _authService;
 
   @override
   void initState() {
     super.initState();
     final apiClient = ApiClient();
-    _walletService = WalletService(apiClient, AuthService(apiClient));
+    _authService = AuthService(apiClient);
   }
 
   void _onDigitTap(String digit) {
@@ -53,14 +55,43 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
     setState(() => _isLoading = true);
 
     try {
-      final token = await _walletService.generateOfflinePaymentToken(widget.amount, _pin);
+      // 1. Verify PIN
+      final isValid = await _authService.verifyLocalPin(_pin);
+      if (!isValid) throw Exception('Code PIN incorrect');
+      
+      final offlineStorage = OfflineStorageService(_authService);
+      
+      // 2. Decrement offline budget locally first
+      await offlineStorage.deductOfflineBudget(widget.amount);
+
+      // 3. Generate Ed25519 signature and payload
+      final cryptoService = OfflineCryptoService(offlineStorage);
+      await cryptoService.initializeKeys(); // S'assurer que les clés existent
+      final userId = await _authService.getUserId() ?? "UNKNOWN_CLIENT";
+      
+      final payload = await cryptoService.generateSignedPayload(
+        clientId: userId,
+        merchantId: 'ANY',
+        amount: widget.amount,
+      );
+
+      // 4. Save to local history
+      await offlineStorage.saveOfflineTransaction({
+        'type': 'PAYMENT_OFFLINE',
+        'amount': widget.amount,
+        'status': 'PENDING_MERCHANT_SYNC',
+        'uuid': payload.uuid,
+      });
+
+      // 5. Encode payload to JSON String for QR Code
+      final jsonToken = jsonEncode(payload.toJson());
 
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => GeneratePaymentQrDisplayPage(
               amount: widget.amount,
-              token: token,
+              token: jsonToken,
             ),
           ),
         );
@@ -69,7 +100,7 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: AppColors.error,
           ),
         );
@@ -116,7 +147,7 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
             VireloPinPad(
               onDigitTap: _onDigitTap,
               onDeleteTap: _onDeleteTap,
-              showBiometric: false, // Pas de biométrie pour la génération hors ligne
+              showBiometric: true,
             ),
             const SizedBox(height: AppSpacing.lg),
           ],

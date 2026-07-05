@@ -22,6 +22,7 @@ class ApiConstants {
   static const String walletBalance = '/wallets/balance';
   static const String initiateRecharge = '/recharges/initiate';
 
-  // Sync / Telecollecte
+  // Sync / Telecollecte / Offline
   static const String syncTelecollecte = '/sync/telecollecte';
+  static const String offlineStatus = '/offline/status';
 }

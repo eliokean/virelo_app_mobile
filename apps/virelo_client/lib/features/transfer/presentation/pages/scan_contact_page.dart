@@ -234,6 +234,11 @@ class _ScanContactPageState extends State<ScanContactPage> {
         'merchantId': merchantId,
         'amount': amount,
         'type': 'payment_sent',
+        'uuid': payload.uuid,
+        'sequenceNumber': payload.sequenceNumber,
+        'timestamp': payload.timestamp,
+        'clientPublicKey': payload.clientPublicKey,
+        'clientSignature': payload.clientSignature,
       });
 
       if (mounted) {

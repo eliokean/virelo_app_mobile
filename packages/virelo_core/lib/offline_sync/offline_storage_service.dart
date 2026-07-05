@@ -132,6 +132,18 @@ class OfflineStorageService {
     return history.map((e) => e as Map<String, dynamic>).toList().reversed.toList();
   }
 
+  Future<void> removeOfflineTransaction(String uuid) async {
+    final userId = await _authService.getUserId();
+    if (userId == null) return;
+    
+    final key = 'offline_history_$userId';
+    final historyStr = _box.get(key) ?? '[]';
+    final List<dynamic> history = jsonDecode(historyStr.toString());
+    
+    final updatedHistory = history.where((e) => (e as Map)['uuid'] != uuid).toList();
+    await _box.put(key, jsonEncode(updatedHistory));
+  }
+
   Future<void> clearOfflineTransactions() async {
     final userId = await _authService.getUserId();
     if (userId == null) return;

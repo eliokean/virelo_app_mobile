@@ -2,17 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
-import '../../../history/presentation/pages/history_page.dart';
-import 'package:virelo_core/network/api_client.dart';
 import 'package:intl/intl.dart';
-import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-class RecentActivityList extends StatelessWidget {
+class MerchantActivityList extends StatelessWidget {
   final List<dynamic> activities;
   final bool isLoading;
 
-  const RecentActivityList({
+  const MerchantActivityList({
     super.key,
     required this.activities,
     this.isLoading = false,
@@ -33,15 +29,6 @@ class RecentActivityList extends StatelessWidget {
     }
   }
 
-
-
-  IconData _getIconForType(String type, bool isNegative) {
-    if (type == 'c2c_transfer' || type == 'offline') {
-      return isNegative ? LucideIcons.arrowUpRight : LucideIcons.arrowDownLeft;
-    }
-    return LucideIcons.shoppingBag;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -51,7 +38,7 @@ class RecentActivityList extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Activité récente',
+              'Dernières ventes',
               style: AppTextStyles.labelLarge.copyWith(
                 color: const Color(0xFF161A22),
                 fontWeight: FontWeight.bold,
@@ -66,10 +53,7 @@ class RecentActivityList extends StatelessWidget {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HistoryPage()),
-                );
+                // Navigate to history
               },
             ),
           ],
@@ -80,25 +64,21 @@ class RecentActivityList extends StatelessWidget {
         else if (activities.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-            child: Text('Aucune activité récente.'),
+            child: Text('Aucune vente récente.'),
           )
         else
-          ...activities.take(5).map((activity) { // On prend les 5 plus récentes max
-            final isNegative = activity['is_negative'] ?? true; // Défaut débit (scan paiement)
-            final amountStr = '${isNegative ? '-' : '+'}${activity['amount']} FCFA';
-            final isPending = activity['uuid'] != null || activity['status'] == 'pending_merchant_validation';
-            final subtitleText = isPending && activity['status'] == 'pending_merchant_validation' 
-                ? 'En attente du marchand' 
-                : _formatDate(activity['date'] ?? activity['timestamp'] ?? DateTime.now().toIso8601String());
-
+          ...activities.take(5).map((activity) { 
+            final amount = double.tryParse(activity['amount'].toString()) ?? 0.0;
+            final amountStr = '+${amount.toStringAsFixed(0)} FCFA';
+            final isPending = activity['uuid'] != null; // Simili-logique offline
+            
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: _buildActivityItem(
-                icon: _getIconForType(activity['type'] ?? 'offline', isNegative),
-                title: activity['title'] ?? (activity['merchantId'] != null ? 'Paiement Hors Ligne' : 'Transaction'),
-                subtitle: subtitleText,
+                icon: LucideIcons.arrowDownLeft, // Entrée d'argent
+                title: activity['title'] ?? 'Encaissement Client',
+                subtitle: _formatDate(activity['date'] ?? activity['created_at'] ?? DateTime.now().toIso8601String()),
                 amount: amountStr,
-                isNegative: isNegative,
                 isPending: isPending,
               ),
             );
@@ -112,7 +92,6 @@ class RecentActivityList extends StatelessWidget {
     required String title,
     required String subtitle,
     required String amount,
-    required bool isNegative,
     bool isPending = false,
   }) {
     return Container(
@@ -156,7 +135,7 @@ class RecentActivityList extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  isPending ? "En attente de synchro" : subtitle,
+                  isPending ? "Attente de télécollecte" : subtitle,
                   style: AppTextStyles.labelSmall.copyWith(
                     color: isPending ? const Color(0xFFE65100) : const Color(0xFF8B93A8),
                     fontWeight: isPending ? FontWeight.w600 : FontWeight.normal,
@@ -168,7 +147,7 @@ class RecentActivityList extends StatelessWidget {
           Text(
             amount,
             style: AppTextStyles.labelLarge.copyWith(
-              color: isNegative ? const Color(0xFF161A22) : const Color(0xFF8DC973),
+              color: const Color(0xFF8DC973), // Toujours vert pour le marchand
               fontWeight: FontWeight.bold,
             ),
           ),
