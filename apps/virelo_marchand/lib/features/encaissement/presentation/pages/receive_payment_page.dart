@@ -9,6 +9,7 @@ import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/constants/api_constants.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/services/offline_sync_service.dart';
+import '../../../../core/services/auto_sync_manager.dart';
 
 class ReceivePaymentPage extends StatefulWidget {
   const ReceivePaymentPage({super.key});
@@ -61,6 +62,8 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
                 );
                 Navigator.pop(context);
               }
+              
+              AutoSyncManager().triggerSync();
               return;
             }
 
@@ -100,6 +103,7 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
                 );
                 Navigator.pop(context); // Go back to dashboard
               }
+              AutoSyncManager().triggerSync();
             } else {
               rethrow; // Rethrow other API errors (e.g., 400 Bad Request)
             }
@@ -147,24 +151,6 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
           style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            color: Colors.white,
-            icon: ValueListenableBuilder(
-              valueListenable: cameraController.torchState,
-              builder: (context, state, child) {
-                switch (state) {
-                  case TorchState.off:
-                    return const Icon(Icons.flash_off, color: Colors.grey);
-                  case TorchState.on:
-                    return const Icon(Icons.flash_on, color: Colors.yellow);
-                }
-              },
-            ),
-            iconSize: 32.0,
-            onPressed: () => cameraController.toggleTorch(),
-          ),
-        ],
       ),
       body: Stack(
         children: [

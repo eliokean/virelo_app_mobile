@@ -10,6 +10,7 @@ import 'package:virelo_core/services/merchant_service.dart';
 import '../../../../config/routes/route_names.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/offline_sync_service.dart';
+import 'generate_invoice_amount_page.dart';
 import '../widgets/merchant_header.dart';
 import '../widgets/merchant_balance_card.dart';
 import '../widgets/merchant_activity_list.dart';
@@ -32,6 +33,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
   int _pendingSyncCount = 0;
   double _pendingAmount = 0;
   bool _isSyncing = false;
+  int _merchantId = 0;
 
   @override
   void initState() {
@@ -58,6 +60,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       if (mounted) {
         setState(() {
           _merchantName = statsData['merchant']['name'] ?? 'Ma Boutique';
+          _merchantId = statsData['merchant']['user_id'] ?? 0;
           _balance = (wallet != null && wallet['balance'] != null) 
               ? double.parse(wallet['balance'].toString()).toStringAsFixed(0) 
               : "0";
@@ -186,36 +189,24 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                       Expanded(
                         child: _buildOfflineActionCard(
                           context,
-                          title: 'Encaisser (Scan)',
+                          title: 'Encaisser',
                           icon: LucideIcons.qrCode,
                           onTap: () {
-                            context.pushNamed(RouteNames.receivePayment).then((_) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => GenerateInvoiceAmountPage(
+                                  merchantId: _merchantId,
+                                  merchantName: _merchantName,
+                                ),
+                              ),
+                            ).then((_) {
                               _loadDashboardData();
                             });
                           },
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: _buildOfflineActionCard(
-                          context,
-                          title: 'Générer Facture',
-                          icon: LucideIcons.receipt,
-                          onTap: () {
-                            // Implémentation future (QR statique marchand)
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: _buildOfflineActionCard(
-                          context,
-                          title: 'Synchro',
-                          icon: LucideIcons.uploadCloud,
-                          isAccent: true,
-                          onTap: _syncOfflineTransactions,
-                        ),
-                      ),
+                      // "Synchro" action removed (Automated by AutoSyncManager)
                     ],
                   ),
                 ],

@@ -4,7 +4,7 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import '../../../deposit/presentation/pages/deposit_amount_page.dart';
 import '../../../transfer/presentation/pages/transfer_contact_page.dart';
-import '../../../payment/presentation/pages/generate_payment_qr_amount_page.dart';
+import '../../../payment/presentation/pages/scan_invoice_page.dart';
 
 class WalletActionsBar extends StatelessWidget {
   final VoidCallback? onRefresh;
@@ -115,7 +115,7 @@ class WalletActionsBar extends StatelessWidget {
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const GeneratePaymentQrAmountPage()),
+              MaterialPageRoute(builder: (_) => const ScanInvoicePage()),
             );
             onRefresh?.call();
           },

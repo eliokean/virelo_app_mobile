@@ -245,39 +245,7 @@ class _OfflineSyncQueuePageState extends State<OfflineSyncQueuePage> {
                 ),
               ],
             ),
-      bottomNavigationBar: _receipts.isEmpty
-          ? null
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isSyncing ? null : _syncStatuses,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB5E48C),
-                      foregroundColor: const Color(0xFF131517),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      disabledBackgroundColor: const Color(0xFF2C3138),
-                    ),
-                    child: _isSyncing
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF131517),
-                            ),
-                          )
-                        : Text(
-                            'Synchroniser tout',
-                            style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                  ),
-                ),
-              ),
-            ),
+      // Removed manual sync button because of AutoSyncManager
     );
   }
 }

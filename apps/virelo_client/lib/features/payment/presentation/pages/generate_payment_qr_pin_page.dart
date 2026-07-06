@@ -9,12 +9,20 @@ import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
 import 'package:virelo_core/crypto/offline_crypto_service.dart';
+import '../../../../core/services/auto_sync_manager.dart';
 import 'generate_payment_qr_display_page.dart';
 
 class GeneratePaymentQrPinPage extends StatefulWidget {
   final double amount;
+  final String merchantId;
+  final String merchantName;
 
-  const GeneratePaymentQrPinPage({super.key, required this.amount});
+  const GeneratePaymentQrPinPage({
+    super.key, 
+    required this.amount,
+    this.merchantId = 'ANY',
+    this.merchantName = 'un marchand',
+  });
 
   @override
   State<GeneratePaymentQrPinPage> createState() => _GeneratePaymentQrPinPageState();
@@ -71,7 +79,7 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
       
       final payload = await cryptoService.generateSignedPayload(
         clientId: userId,
-        merchantId: 'ANY',
+        merchantId: widget.merchantId,
         amount: widget.amount,
       );
 
@@ -85,6 +93,9 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
 
       // 5. Encode payload to JSON String for QR Code
       final jsonToken = jsonEncode(payload.toJson());
+
+      // 6. Tenter une synchronisation automatique immédiate
+      AutoSyncManager().triggerSync();
 
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -136,6 +147,14 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
               'Confirmez le paiement de ${widget.amount} FCFA',
               style: AppTextStyles.bodyMedium,
             ),
+            if (widget.merchantId != 'ANY')
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  'vers ${widget.merchantName}',
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
             const Spacer(flex: 2),
             
             if (_isLoading)

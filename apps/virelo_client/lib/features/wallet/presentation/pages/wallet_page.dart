@@ -7,7 +7,7 @@ import 'package:virelo_core/services/wallet_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../../payment/presentation/pages/generate_payment_qr_amount_page.dart';
+import '../../../payment/presentation/pages/scan_invoice_page.dart';
 import '../widgets/wallet_header.dart';
 import '../widgets/balance_hero_card.dart';
 import '../widgets/wallet_actions_bar.dart';
@@ -272,7 +272,7 @@ class _WalletPageState extends State<WalletPage> {
               Expanded(
                 flex: 2,
                 child: ElevatedButton.icon(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GeneratePaymentQrAmountPage())),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanInvoicePage())),
                   icon: const Icon(LucideIcons.qrCode, size: 18),
                   label: const Text('Payer', style: TextStyle(fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(

@@ -7,6 +7,9 @@ import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/pin_login_page.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import 'core/services/offline_sync_service.dart';
+import 'core/services/auto_sync_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,8 +52,13 @@ class _VireloAppState extends State<VireloApp> {
   @override
   void initState() {
     super.initState();
-    _authService = AuthService(ApiClient());
+    final apiClient = ApiClient();
+    _authService = AuthService(apiClient);
     _hasPinFuture = _authService.hasLocalPin();
+
+    final offlineStorage = OfflineStorageService(_authService);
+    final offlineSync = OfflineSyncService(apiClient, offlineStorage);
+    AutoSyncManager().initialize(offlineSync);
   }
 
   @override
