@@ -7,15 +7,22 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_primary_button.dart';
 import 'package:virelo_core/network/api_client.dart';
+import 'package:virelo_core/offline_sync/offline_authorization_payload.dart';
+import 'package:virelo_core/crypto/offline_crypto_service.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/nfc/nfc_payment_service.dart';
 
 class GeneratePaymentQrDisplayPage extends StatefulWidget {
   final double amount;
-  final String token;
+  final String token; // Le token obfusqué pour le QR
+  final OfflineAuthorizationPayload payload; // Le payload complet pour le NFC
 
   const GeneratePaymentQrDisplayPage({
     super.key,
     required this.amount,
     required this.token,
+    required this.payload,
   });
 
   @override
@@ -151,6 +158,23 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
           ),
         ),
         
+        const SizedBox(height: AppSpacing.xl),
+
+        // NFC BUTTON
+        OutlinedButton.icon(
+          onPressed: _startNfcTransmission,
+          icon: const Icon(Icons.contactless),
+          label: const Text('Approcher du TPE (NFC)'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.accent,
+            side: const BorderSide(color: AppColors.accent),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        
         const Spacer(flex: 2),
         VireloPrimaryButton(
           label: 'Terminé',
@@ -158,6 +182,47 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
         ),
         const SizedBox(height: AppSpacing.xl),
       ],
+    );
+  }
+
+  void _startNfcTransmission() async {
+    final offlineStorage = OfflineStorageService(AuthService(ApiClient()));
+    final nfcService = NfcPaymentService(OfflineCryptoService(offlineStorage));
+    
+    // Show a bottom sheet to tell the user to hold phone near TPE
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          height: 250,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.contactless, size: 64, color: AppColors.accent),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Approchez votre téléphone du TPE',
+                style: AppTextStyles.headlineMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
+    );
+
+    await nfcService.sendPaymentPayload(
+      widget.payload,
+      () {
+        Navigator.pop(context); // Close bottom sheet
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paiement transmis avec succès !')));
+      },
+      (error) {
+        Navigator.pop(context); // Close bottom sheet
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: AppColors.error));
+      }
     );
   }
 

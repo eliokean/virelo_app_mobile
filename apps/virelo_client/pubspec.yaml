@@ -44,11 +44,13 @@ dependencies:
   flutter_svg: ^2.0.10
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.2.0
-  nfc_manager: ^4.2.1
+  nfc_manager: ^3.4.0
   crypto: ^3.0.7
   dart_jsonwebtoken: ^3.4.1
   hive_flutter: ^1.1.0
   connectivity_plus: ^7.2.0
+  image_picker: ^1.2.3
+  provider: ^6.1.5+1
 
 dev_dependencies:
   flutter_test:

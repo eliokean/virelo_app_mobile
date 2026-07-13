@@ -6,6 +6,7 @@ import 'package:virelo_design_system/widgets/virelo_pin_pad.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import '../../../wallet/presentation/pages/wallet_page.dart';
+import 'device_verification_page.dart';
 
 class LoginNetworkPinPage extends StatefulWidget {
   final String phone;
@@ -51,17 +52,26 @@ class _LoginNetworkPinPageState extends State<LoginNetworkPinPage> {
 
     try {
       // Le PIN fait office de mot de passe pour le backend
-      await _authService.login(widget.phone, _pin);
+      final response = await _authService.login(widget.phone, _pin);
       
       // Sauvegarde du PIN en local
       await _authService.saveLocalPin(_pin);
       
       if (mounted) {
-        // Redirection vers le Wallet, en supprimant tout l'historique
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const WalletPage()),
-          (route) => false,
-        );
+        if (response != null && response['requires_device_verification'] == true) {
+          // Si le backend a détecté un nouvel appareil et a généré un OTP
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => DeviceVerificationPage(phone: widget.phone),
+            ),
+          );
+        } else {
+          // Sinon, on va au Wallet normal
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const WalletPage()),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

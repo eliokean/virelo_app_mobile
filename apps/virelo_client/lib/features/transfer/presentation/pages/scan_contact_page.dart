@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/nfc_manager_android.dart' as android_tags;
-import 'package:nfc_manager/nfc_manager_ios.dart' as ios_tags;
+import 'package:nfc_manager/platform_tags.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
@@ -51,13 +50,11 @@ class _ScanContactPageState extends State<ScanContactPage> {
     if (isAvailable) {
       try {
         NfcManager.instance.startSession(
-          pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693, NfcPollingOption.iso18092},
           onDiscovered: (NfcTag tag) async {
             NfcManager.instance.stopSession();
             try {
-              final ndefAndroid = android_tags.NdefAndroid.from(tag);
-              final ndefIos = ios_tags.NdefIos.from(tag);
-              final cachedMessage = ndefAndroid?.cachedNdefMessage ?? ndefIos?.cachedNdefMessage;
+              final ndef = Ndef.from(tag);
+              final cachedMessage = ndef?.cachedMessage;
 
               if (cachedMessage != null) {
                 for (var record in cachedMessage.records) {

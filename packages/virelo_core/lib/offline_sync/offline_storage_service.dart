@@ -5,7 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:virelo_core/services/auth_service.dart';
 
 class OfflineStorageService {
-  final Box _box = Hive.box('virelo_offline_box');
+  Box get _box => Hive.box('virelo_offline_box');
   final AuthService _authService;
 
   static const String _keyPrivateKey = 'offline_private_key';

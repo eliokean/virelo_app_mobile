@@ -7,6 +7,7 @@ class OfflineAuthorizationPayload {
   final String uuid;
   final String clientPublicKey;
   final String clientSignature;
+  final String validUntil;
 
   OfflineAuthorizationPayload({
     required this.clientId,
@@ -17,6 +18,7 @@ class OfflineAuthorizationPayload {
     required this.uuid,
     required this.clientPublicKey,
     required this.clientSignature,
+    required this.validUntil,
   });
 
   Map<String, dynamic> toJson() => {
@@ -28,6 +30,7 @@ class OfflineAuthorizationPayload {
         'uuid': uuid,
         'clientPublicKey': clientPublicKey,
         'clientSignature': clientSignature,
+        'validUntil': validUntil,
       };
 
   factory OfflineAuthorizationPayload.fromJson(Map<String, dynamic> json) {
@@ -40,11 +43,12 @@ class OfflineAuthorizationPayload {
       uuid: json['uuid'] as String? ?? '', // Support retrocompatibilité si absent
       clientPublicKey: json['clientPublicKey'] as String,
       clientSignature: json['clientSignature'] as String,
+      validUntil: json['validUntil'] as String? ?? '', 
     );
   }
 
   /// Retourne les données brutes sous forme de String pour la signature
   String getDataToSign() {
-    return '$clientId:$merchantId:$amount:$sequenceNumber:$timestamp:$uuid:$clientPublicKey';
+    return '$clientId:$merchantId:$amount:$sequenceNumber:$timestamp:$uuid:$clientPublicKey:$validUntil';
   }
 }

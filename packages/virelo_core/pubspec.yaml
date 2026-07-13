@@ -17,6 +17,9 @@ dependencies:
   hive_flutter: ^1.1.0
   uuid: ^4.5.3
   ed25519_edwards: ^0.3.1
+  nfc_manager: ^3.4.0
+  device_info_plus: ^13.2.0
+  freerasp: ^8.0.0
 
 dev_dependencies:
   flutter_test:

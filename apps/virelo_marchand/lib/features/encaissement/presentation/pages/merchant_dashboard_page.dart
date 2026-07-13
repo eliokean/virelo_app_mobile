@@ -11,6 +11,7 @@ import '../../../../config/routes/route_names.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import 'generate_invoice_amount_page.dart';
+import 'nfc_reader_page.dart';
 import '../widgets/merchant_header.dart';
 import '../widgets/merchant_balance_card.dart';
 import '../widgets/merchant_activity_list.dart';
@@ -189,7 +190,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                       Expanded(
                         child: _buildOfflineActionCard(
                           context,
-                          title: 'Encaisser',
+                          title: 'Encaisser (QR)',
                           icon: LucideIcons.qrCode,
                           onTap: () {
                             Navigator.push(
@@ -206,7 +207,24 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                           },
                         ),
                       ),
-                      // "Synchro" action removed (Automated by AutoSyncManager)
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _buildOfflineActionCard(
+                          context,
+                          title: 'Sans Contact',
+                          icon: Icons.contactless,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NfcReaderPage(),
+                              ),
+                            ).then((_) {
+                              _loadDashboardData();
+                            });
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ],

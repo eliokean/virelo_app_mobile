@@ -5,6 +5,7 @@ import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import '../../../kyc/presentation/pages/kyc_upload_page.dart';
 
 class WalletHeader extends StatelessWidget {
   final String userName;
@@ -38,6 +39,13 @@ class WalletHeader extends StatelessWidget {
               ],
             ),
           ),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const KycUploadPage()));
+            },
+            child: _buildIconButton(LucideIcons.user),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           GestureDetector(
             onTap: () async {
               final authService = AuthService(ApiClient());

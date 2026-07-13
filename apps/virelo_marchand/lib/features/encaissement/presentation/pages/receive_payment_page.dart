@@ -10,6 +10,9 @@ import 'package:virelo_core/constants/api_constants.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import '../../../../core/services/auto_sync_manager.dart';
+import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import 'package:virelo_core/crypto/offline_crypto_service.dart';
 
 class ReceivePaymentPage extends StatefulWidget {
   const ReceivePaymentPage({super.key});
@@ -36,11 +39,13 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
           double amount = 0;
           Map<String, dynamic> payload = {};
           try {
-            // Dans le nouveau modèle Dual Offline, le jeton est directement le JSON du OfflineAuthorizationPayload
-            payload = jsonDecode(code);
-            amount = (payload['amount'] as num).toDouble();
+            // Le QR Code est chiffré en AES-GCM par le client, on doit le déchiffrer
+            final cryptoService = OfflineCryptoService(OfflineStorageService(AuthService(ApiClient())));
+            final decryptedPayload = await cryptoService.decryptPayload(code);
+            payload = decryptedPayload.toJson();
+            amount = decryptedPayload.amount;
           } catch (e) {
-            throw Exception("Format de jeton invalide");
+            throw Exception("Format de jeton invalide: $e. Code scanné: $code");
           }
 
           try {
@@ -51,7 +56,7 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
             if (isOffline) {
               // Direct to offline
               final offlineService = OfflineSyncService(ApiClient());
-              await offlineService.saveTransaction(code, amount);
+              await offlineService.saveTransaction(jsonEncode(payload), amount);
 
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +81,7 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Paiement réussi ! ${response.data['amount']} XOF encaissés.'),
+                  content: Text('Paiement réussi ! $amount XOF encaissés.'),
                   backgroundColor: AppColors.success,
                 ),
               );
@@ -92,7 +97,7 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
                  [404, 500, 502, 503, 504].contains(e.response?.statusCode))) {
               
               final offlineService = OfflineSyncService(ApiClient());
-              await offlineService.saveTransaction(code, amount);
+              await offlineService.saveTransaction(jsonEncode(payload), amount);
 
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(

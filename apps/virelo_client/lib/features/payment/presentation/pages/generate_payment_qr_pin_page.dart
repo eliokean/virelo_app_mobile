@@ -91,8 +91,8 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
         'uuid': payload.uuid,
       });
 
-      // 5. Encode payload to JSON String for QR Code
-      final jsonToken = jsonEncode(payload.toJson());
+      // 5. Encrypt payload to Base64 String for QR Code (Obfuscation)
+      final encryptedToken = await cryptoService.encryptPayload(payload);
 
       // 6. Tenter une synchronisation automatique immédiate
       AutoSyncManager().triggerSync();
@@ -102,7 +102,8 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
           MaterialPageRoute(
             builder: (_) => GeneratePaymentQrDisplayPage(
               amount: widget.amount,
-              token: jsonToken,
+              token: encryptedToken,
+              payload: payload,
             ),
           ),
         );

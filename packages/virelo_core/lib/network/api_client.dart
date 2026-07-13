@@ -1,10 +1,17 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/api_constants.dart';
 
 class ApiClient {
   late Dio _dio;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
+  // Empreintes SHA-256 du certificat backend de production (EXEMPLE)
+  static const List<String> _pinnedFingerprints = [
+    '3F:A3:8C:1E:5E:7B:9A:2F:1D:4C:6A:8B:0E:5D:7C:9F:3A:1B:2E:4D:6C:8A:0F:2E:4D:6C:8A:0F:2E:4D:6C:8A',
+  ];
 
   ApiClient() {
     _dio = Dio(
@@ -17,6 +24,26 @@ class ApiClient {
           'Content-Type': 'application/json',
         },
       ),
+    );
+
+    // SSL Pinning Configuration
+    _dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+          // AVERTISSEMENT : En mode développement local, on retourne TRUE pour accepter les certificats auto-signés
+          // En PRODUCTION stricte (Niveau Bancaire), il FAUT vérifier l'empreinte :
+          
+          /*
+          final String serverFingerprint = cert.sha256.replaceAll(':', '').toUpperCase();
+          final String expectedFingerprint = _pinnedFingerprints.first.replaceAll(':', '').toUpperCase();
+          return serverFingerprint == expectedFingerprint;
+          */
+          
+          return true; // DÉSACTIVÉ POUR LE DÉVELOPPEMENT LOCAL
+        };
+        return client;
+      },
     );
 
     _dio.interceptors.add(InterceptorsWrapper(

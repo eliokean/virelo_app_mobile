@@ -36,7 +36,9 @@ class OfflineCryptoService {
     }
 
     final sequenceNumber = await _storageService.incrementAndGetSequenceNumber();
-    final timestamp = DateTime.now().toIso8601String();
+    final now = DateTime.now();
+    final timestamp = now.toIso8601String();
+    final validUntil = now.add(const Duration(seconds: 90)).toIso8601String();
     final publicKeyBase64 = await getPublicKey() ?? '';
     final payloadUuid = const Uuid().v4();
 
@@ -50,6 +52,7 @@ class OfflineCryptoService {
       uuid: payloadUuid,
       clientPublicKey: publicKeyBase64,
       clientSignature: '', // Sera rempli juste après
+      validUntil: validUntil,
     );
 
     // On signe les données
@@ -66,6 +69,7 @@ class OfflineCryptoService {
       uuid: payloadUuid,
       clientPublicKey: publicKeyBase64,
       clientSignature: base64Encode(signature.bytes),
+      validUntil: validUntil,
     );
   }
 
@@ -82,5 +86,50 @@ class OfflineCryptoService {
       dataToSign,
       signature: signature,
     );
+  }
+
+  /// Chiffrement symétrique pour protéger visuellement le QR Code ou le tag NFC (Privacy)
+  /// Utilise une clé dérivée ou un master secret partagé (POC). 
+  /// En production bancaire absolue, on utiliserait ECDH (X25519) avec la clé publique du marchand.
+  Future<String> encryptPayload(OfflineAuthorizationPayload payload) async {
+    final aesGcm = AesGcm.with256bits();
+    final secretKey = await aesGcm.newSecretKeyFromBytes(
+      utf8.encode('virelo_master_secret_key_32bytes') // À stocker sécuritairement
+    );
+    final nonce = aesGcm.newNonce();
+    final clearText = utf8.encode(jsonEncode(payload.toJson()));
+
+    final secretBox = await aesGcm.encrypt(
+      clearText,
+      secretKey: secretKey,
+      nonce: nonce,
+    );
+
+    // On retourne le nonce concaténé au texte chiffré (format classique)
+    final encryptedBytes = secretBox.concatenation();
+    return base64Encode(encryptedBytes);
+  }
+
+  /// Déchiffrement du payload côté Marchand
+  Future<OfflineAuthorizationPayload> decryptPayload(String encryptedBase64) async {
+    final encryptedBytes = base64Decode(encryptedBase64);
+    final aesGcm = AesGcm.with256bits();
+    final secretKey = await aesGcm.newSecretKeyFromBytes(
+      utf8.encode('virelo_master_secret_key_32bytes')
+    );
+
+    final secretBox = SecretBox.fromConcatenation(
+      encryptedBytes, 
+      nonceLength: aesGcm.nonceLength, 
+      macLength: aesGcm.macAlgorithm.macLength
+    );
+
+    final clearText = await aesGcm.decrypt(
+      secretBox,
+      secretKey: secretKey,
+    );
+
+    final jsonString = utf8.decode(clearText);
+    return OfflineAuthorizationPayload.fromJson(jsonDecode(jsonString));
   }
 }
