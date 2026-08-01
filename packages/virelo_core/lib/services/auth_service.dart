@@ -5,6 +5,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../network/api_client.dart';
 import '../constants/api_constants.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class AuthService {
   final ApiClient _apiClient;
@@ -61,11 +62,18 @@ class AuthService {
       if (data != null && data['token'] != null) {
         await _apiClient.saveToken(data['token']);
         if (data['user'] != null) {
-          if (data['user']['id'] != null) {
-            await _secureStorage.write(key: 'user_id', value: data['user']['id'].toString());
+          final userIdStr = data['user']['id']?.toString();
+          if (userIdStr != null) {
+            await _secureStorage.write(key: 'user_id', value: userIdStr);
           }
           if (data['user']['name'] != null) {
             await _secureStorage.write(key: 'user_name', value: data['user']['name'].toString());
+          }
+          if (data['user']['wallet'] != null && data['user']['wallet']['balance'] != null && userIdStr != null) {
+             try {
+               final balanceStr = data['user']['wallet']['balance'].toString();
+               await Hive.box('virelo_offline_box').put('offline_budget_$userIdStr', balanceStr);
+             } catch (_) {}
           }
         }
       }
@@ -99,11 +107,18 @@ class AuthService {
       if (data != null && data['token'] != null) {
         await _apiClient.saveToken(data['token']);
         if (data['user'] != null) {
-          if (data['user']['id'] != null) {
-            await _secureStorage.write(key: 'user_id', value: data['user']['id'].toString());
+          final userIdStr = data['user']['id']?.toString();
+          if (userIdStr != null) {
+            await _secureStorage.write(key: 'user_id', value: userIdStr);
           }
           if (data['user']['name'] != null) {
             await _secureStorage.write(key: 'user_name', value: data['user']['name'].toString());
+          }
+          if (data['user']['wallet'] != null && data['user']['wallet']['balance'] != null && userIdStr != null) {
+             try {
+               final balanceStr = data['user']['wallet']['balance'].toString();
+               await Hive.box('virelo_offline_box').put('offline_budget_$userIdStr', balanceStr);
+             } catch (_) {}
           }
         }
       }
@@ -119,6 +134,13 @@ class AuthService {
     } catch (e) {
       // Ignorer
     } finally {
+      final userId = await getUserId();
+      if (userId != null) {
+        try {
+          await Hive.box('virelo_offline_box').delete('offline_budget_$userId');
+          await Hive.box('virelo_offline_box').delete('offline_history_$userId');
+        } catch (_) {}
+      }
       await _apiClient.clearToken();
       await _secureStorage.delete(key: 'user_pin');
       await _secureStorage.delete(key: 'user_id');
@@ -144,11 +166,18 @@ class AuthService {
       if (data != null && data['token'] != null) {
         await _apiClient.saveToken(data['token']);
         if (data['user'] != null) {
-          if (data['user']['id'] != null) {
-            await _secureStorage.write(key: 'user_id', value: data['user']['id'].toString());
+          final userIdStr = data['user']['id']?.toString();
+          if (userIdStr != null) {
+            await _secureStorage.write(key: 'user_id', value: userIdStr);
           }
           if (data['user']['name'] != null) {
             await _secureStorage.write(key: 'user_name', value: data['user']['name'].toString());
+          }
+          if (data['user']['wallet'] != null && data['user']['wallet']['balance'] != null && userIdStr != null) {
+             try {
+               final balanceStr = data['user']['wallet']['balance'].toString();
+               await Hive.box('virelo_offline_box').put('offline_budget_$userIdStr', balanceStr);
+             } catch (_) {}
           }
         }
       }
