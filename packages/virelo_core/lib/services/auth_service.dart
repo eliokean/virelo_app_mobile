@@ -5,7 +5,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../network/api_client.dart';
 import '../constants/api_constants.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import '../offline_sync/hive_manager.dart';
 
 class AuthService {
   final ApiClient _apiClient;
@@ -72,7 +72,8 @@ class AuthService {
           if (data['user']['wallet'] != null && data['user']['wallet']['balance'] != null && userIdStr != null) {
              try {
                final balanceStr = data['user']['wallet']['balance'].toString();
-               await Hive.box('virelo_offline_box').put('offline_budget_$userIdStr', balanceStr);
+               final box = await HiveManager.openOfflineBox();
+               await box.put('offline_budget_$userIdStr', balanceStr);
              } catch (_) {}
           }
         }
@@ -117,7 +118,8 @@ class AuthService {
           if (data['user']['wallet'] != null && data['user']['wallet']['balance'] != null && userIdStr != null) {
              try {
                final balanceStr = data['user']['wallet']['balance'].toString();
-               await Hive.box('virelo_offline_box').put('offline_budget_$userIdStr', balanceStr);
+               final box = await HiveManager.openOfflineBox();
+               await box.put('offline_budget_$userIdStr', balanceStr);
              } catch (_) {}
           }
         }
@@ -137,8 +139,9 @@ class AuthService {
       final userId = await getUserId();
       if (userId != null) {
         try {
-          await Hive.box('virelo_offline_box').delete('offline_budget_$userId');
-          await Hive.box('virelo_offline_box').delete('offline_history_$userId');
+          final box = await HiveManager.openOfflineBox();
+          await box.delete('offline_budget_$userId');
+          await box.delete('offline_history_$userId');
         } catch (_) {}
       }
       await _apiClient.clearToken();
@@ -176,7 +179,8 @@ class AuthService {
           if (data['user']['wallet'] != null && data['user']['wallet']['balance'] != null && userIdStr != null) {
              try {
                final balanceStr = data['user']['wallet']['balance'].toString();
-               await Hive.box('virelo_offline_box').put('offline_budget_$userIdStr', balanceStr);
+               final box = await HiveManager.openOfflineBox();
+               await box.put('offline_budget_$userIdStr', balanceStr);
              } catch (_) {}
           }
         }
