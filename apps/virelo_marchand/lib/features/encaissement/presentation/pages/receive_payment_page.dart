@@ -6,7 +6,6 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:virelo_core/network/api_client.dart';
-import 'package:virelo_core/constants/api_constants.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import '../../../../core/services/auto_sync_manager.dart';
@@ -42,10 +41,25 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
             // Le QR Code est chiffré en AES-GCM par le client, on doit le déchiffrer
             final cryptoService = OfflineCryptoService(OfflineStorageService(AuthService(ApiClient())));
             final decryptedPayload = await cryptoService.decryptPayload(code);
+
+            // 1. Vérification de la signature cryptographique Ed25519 (Sécurité Hors-Ligne)
+            final isValid = await cryptoService.verifyPayload(decryptedPayload);
+            if (!isValid) {
+              throw Exception("Signature cryptographique invalide ou falsifiée !");
+            }
+
+            // 2. Vérification de la validité temporelle (Anti-Rejeu / Expiration)
+            if (decryptedPayload.validUntil.isNotEmpty) {
+              final validUntilDate = DateTime.tryParse(decryptedPayload.validUntil);
+              if (validUntilDate != null && DateTime.now().isAfter(validUntilDate.add(const Duration(seconds: 30)))) {
+                throw Exception("Paiement rejeté : le jeton a expiré !");
+              }
+            }
+
             payload = decryptedPayload.toJson();
             amount = decryptedPayload.amount;
           } catch (e) {
-            throw Exception("Format de jeton invalide: $e. Code scanné: $code");
+            throw Exception("Format ou signature de jeton invalide: $e");
           }
 
           try {
@@ -73,7 +87,7 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
             }
 
             // If online, proceed with normal API request
-            final response = await ApiClient().dio.post(
+            await ApiClient().dio.post(
               '/offline/sync', // Nouveau endpoint Dual Offline
               data: payload,
             );

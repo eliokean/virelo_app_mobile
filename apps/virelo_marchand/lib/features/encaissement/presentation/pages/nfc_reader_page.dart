@@ -49,6 +49,14 @@ class _NfcReaderPageState extends State<NfcReaderPage> {
 
   Future<void> _processPayload(OfflineAuthorizationPayload payload) async {
     try {
+      // 1. Vérification de la validité temporelle (Anti-Rejeu / Expiration)
+      if (payload.validUntil.isNotEmpty) {
+        final validUntilDate = DateTime.tryParse(payload.validUntil);
+        if (validUntilDate != null && DateTime.now().isAfter(validUntilDate.add(const Duration(seconds: 30)))) {
+          throw Exception("Paiement NFC rejeté : le jeton a expiré !");
+        }
+      }
+
       final connectivityResult = await (Connectivity().checkConnectivity());
       final isOffline = connectivityResult.contains(ConnectivityResult.none);
 
