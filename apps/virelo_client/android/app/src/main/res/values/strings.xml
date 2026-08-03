@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Virelo</string>
+    <string name="nfc_service_desc">Virelo NFC Payment Card Emulation</string>
+    <string name="nfc_aid_desc">Virelo Offline Payment AID</string>
+</resources>

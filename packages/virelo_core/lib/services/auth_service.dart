@@ -80,10 +80,17 @@ class AuthService {
       }
       return data;
     } on DioException catch (e) {
-      if (e.response?.statusCode == 403 || (e.response?.data != null && e.response?.data['requires_device_verification'] == true)) {
-        return e.response?.data; // Renvoie les données pour la page OTP
+      final responseData = e.response?.data;
+      if (responseData is Map) {
+        if (e.response?.statusCode == 403 || responseData['requires_device_verification'] == true) {
+          return Map<String, dynamic>.from(responseData); // Renvoie les données pour la page OTP
+        }
+        throw Exception(responseData['message']?.toString() ?? 'Erreur lors de la connexion');
       }
-      throw Exception(e.response?.data['message'] ?? 'Erreur lors de la connexion');
+      if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
+        throw Exception('Impossible de joindre le serveur. Vérifiez la connexion et l\'URL backend.');
+      }
+      throw Exception('Erreur serveur (${e.response?.statusCode ?? 'inconnu'})');
     }
   }
 
@@ -126,7 +133,8 @@ class AuthService {
       }
       return data;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Erreur lors de l\'inscription');
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
+      throw Exception(msg ?? 'Erreur lors de l\'inscription (${e.response?.statusCode ?? 'inconnu'})');
     }
   }
 
@@ -187,7 +195,8 @@ class AuthService {
       }
       return data;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Code OTP invalide ou expiré');
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
+      throw Exception(msg ?? 'Code OTP invalide ou expiré (${e.response?.statusCode ?? 'inconnu'})');
     }
   }
 

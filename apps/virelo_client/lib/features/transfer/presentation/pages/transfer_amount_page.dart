@@ -76,7 +76,7 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
     } on DioException catch (e) {
       if (mounted) {
         setState(() => _isTransferring = false);
-        final errorMsg = e.response?.data['message'] ?? 'Erreur réseau, passage en mode hors ligne...';
+        final errorMsg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() ?? 'Erreur réseau, passage en mode hors ligne...' : 'Erreur réseau, passage en mode hors ligne...';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.orange),
         );

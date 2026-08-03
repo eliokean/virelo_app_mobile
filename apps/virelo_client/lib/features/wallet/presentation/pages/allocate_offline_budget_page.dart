@@ -73,7 +73,7 @@ class _AllocateOfflineBudgetPageState extends State<AllocateOfflineBudgetPage> {
     } on DioException catch (e) {
       if (mounted) {
         setState(() => _isAllocating = false);
-        final errorMsg = e.response?.data['message'] ?? 'Erreur lors de l\'allocation';
+        final errorMsg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() ?? 'Erreur lors de l\'allocation' : 'Erreur lors de l\'allocation';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );

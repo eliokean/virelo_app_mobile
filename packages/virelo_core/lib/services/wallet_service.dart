@@ -13,18 +13,26 @@ class WalletService {
   Future<Map<String, dynamic>> getBalance() async {
     try {
       final response = await _apiClient.dio.get(ApiConstants.walletBalance);
-      return response.data;
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {'balance': 0};
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Erreur lors de la récupération du solde');
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
+      throw Exception(msg ?? 'Erreur lors de la récupération du solde');
     }
   }
 
   Future<Map<String, dynamic>> getOfflineBalance() async {
     try {
       final response = await _apiClient.dio.get('/offline/balance');
-      return response.data;
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {'offline_balance': 0.0};
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Erreur lors de la récupération du solde hors ligne');
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
+      throw Exception(msg ?? 'Erreur lors de la récupération du solde hors ligne');
     }
   }
 
@@ -37,9 +45,13 @@ class WalletService {
           'provider': provider,
         },
       );
-      return response.data;
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {};
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Erreur lors du rechargement');
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
+      throw Exception(msg ?? 'Erreur lors du rechargement');
     }
   }
 

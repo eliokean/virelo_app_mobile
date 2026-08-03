@@ -10,6 +10,8 @@ import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
 import 'package:virelo_core/crypto/offline_crypto_service.dart';
 import '../../../../core/services/auto_sync_manager.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'generate_payment_qr_display_page.dart';
 
 class GeneratePaymentQrPinPage extends StatefulWidget {
@@ -66,15 +68,48 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
       // 1. Verify PIN
       final isValid = await _authService.verifyLocalPin(_pin);
       if (!isValid) throw Exception('Code PIN incorrect');
-      
+
+      // 2. Si le client est en ligne et qu'il s'agit d'une facture marchand, payer directement en ligne
+      final connectivity = await Connectivity().checkConnectivity();
+      final isOnline = !connectivity.contains(ConnectivityResult.none);
+
+      if (isOnline && widget.merchantId != 'ANY') {
+        try {
+          await ApiClient().dio.post('/transfers/merchant', data: {
+            'merchant_id': widget.merchantId,
+            'amount': widget.amount,
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Paiement de ${widget.amount} FCFA effectué avec succès !'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            return;
+          }
+        } on DioException catch (dioErr) {
+          if (dioErr.response?.data is Map) {
+            final msg = (dioErr.response!.data as Map)['message']?.toString();
+            if (msg != null && (msg.contains('Solde insuffisant') || msg.contains('introuvable'))) {
+              throw Exception(msg);
+            }
+          }
+          // En cas d'erreur de connexion réseau, on bascule vers le mode hors-ligne
+        }
+      }
+
+      // 3. Mode Hors-Ligne Cryptographique (Ed25519)
       final offlineStorage = OfflineStorageService(_authService);
       
-      // 2. Decrement offline budget locally first
+      // Déduire du budget hors ligne
       await offlineStorage.deductOfflineBudget(widget.amount);
 
-      // 3. Generate Ed25519 signature and payload
+      // Générer la signature Ed25519 et le payload
       final cryptoService = OfflineCryptoService(offlineStorage);
-      await cryptoService.initializeKeys(); // S'assurer que les clés existent
+      await cryptoService.initializeKeys();
       final userId = await _authService.getUserId() ?? "UNKNOWN_CLIENT";
       
       final payload = await cryptoService.generateSignedPayload(
@@ -83,7 +118,7 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
         amount: widget.amount,
       );
 
-      // 4. Save to local history
+      // Sauvegarder dans l'historique local
       await offlineStorage.saveOfflineTransaction({
         'type': 'PAYMENT_OFFLINE',
         'amount': widget.amount,
@@ -91,10 +126,10 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
         'uuid': payload.uuid,
       });
 
-      // 5. Encrypt payload to Base64 String for QR Code (Obfuscation)
+      // Chiffrer le payload en Base64
       final encryptedToken = await cryptoService.encryptPayload(payload);
 
-      // 6. Tenter une synchronisation automatique immédiate
+      // Déclencher la synchronisation automatique si possible
       AutoSyncManager().triggerSync();
 
       if (mounted) {

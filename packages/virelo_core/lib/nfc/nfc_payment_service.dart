@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/platform_tags.dart';
@@ -16,7 +17,7 @@ class NfcPaymentService {
   }
 
   /// Côté MARCHAND : Active le mode lecteur pour recevoir le paiement
-  /// Attend un NDEF message contenant le payload chiffré
+  /// Supporte à la fois le HCE (IsoDep téléphone-à-téléphone) et les Tags/Cartes NFC physiques (NDEF)
   Future<void> startListeningForPayment(Function(OfflineAuthorizationPayload) onPaymentReceived, Function(String) onError) async {
     bool isAvailable = await isNfcAvailable();
     if (!isAvailable) {
@@ -26,32 +27,61 @@ class NfcPaymentService {
 
     NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
       try {
-        final ndef = Ndef.from(tag);
-        if (ndef == null || ndef.cachedMessage == null) {
-          throw Exception("Tag NFC non valide ou vide");
-        }
+        // 1. Tenter la lecture via IsoDep (Host Card Emulation / Smartphone à Smartphone)
+        final isodep = IsoDep.from(tag);
+        if (isodep != null) {
+          // APDU Select AID: CLA=00, INS=A4, P1=04, P2=00, Lc=07, AID=F0010203040506, Le=00
+          final selectAidApdu = Uint8List.fromList([
+            0x00, 0xA4, 0x04, 0x00, 0x07,
+            0xF0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+            0x00
+          ]);
 
-        // On cherche le record texte contenant le payload chiffré en Base64
-        for (var record in ndef.cachedMessage!.records) {
-          if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
-            // Le premier octet est le code langue, on l'ignore (très basique pour POC)
-            final payloadBytes = record.payload.skip(1).toList();
-            final encryptedBase64 = utf8.decode(payloadBytes);
+          final response = await isodep.transceive(data: selectAidApdu);
+          if (response.length >= 2 &&
+              response[response.length - 2] == 0x90 &&
+              response[response.length - 1] == 0x00) {
+            
+            final payloadBytes = response.sublist(0, response.length - 2);
+            if (payloadBytes.isNotEmpty) {
+              final encryptedBase64 = utf8.decode(payloadBytes);
+              final payload = await _cryptoService.decryptPayload(encryptedBase64);
+              final isValid = await _cryptoService.verifyPayload(payload);
 
-            // Déchiffrement et validation
-            final payload = await _cryptoService.decryptPayload(encryptedBase64);
-            final isValid = await _cryptoService.verifyPayload(payload);
-
-            if (isValid) {
-              onPaymentReceived(payload);
-            } else {
-              throw Exception("Signature NFC invalide");
+              if (isValid) {
+                onPaymentReceived(payload);
+                return;
+              } else {
+                throw Exception("Signature NFC invalide");
+              }
             }
-            break; // On a trouvé notre record
           }
         }
+
+        // 2. Tenter la lecture via NDEF classique (Cartes / Badges / Stickers physiques)
+        final ndef = Ndef.from(tag);
+        if (ndef != null && ndef.cachedMessage != null) {
+          for (var record in ndef.cachedMessage!.records) {
+            if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
+              final payloadBytes = record.payload.skip(1).toList();
+              final encryptedBase64 = utf8.decode(payloadBytes);
+
+              final payload = await _cryptoService.decryptPayload(encryptedBase64);
+              final isValid = await _cryptoService.verifyPayload(payload);
+
+              if (isValid) {
+                onPaymentReceived(payload);
+                return;
+              } else {
+                throw Exception("Signature NFC invalide");
+              }
+            }
+          }
+        }
+
+        throw Exception("Aucune donnée de paiement valide reçue par NFC");
       } catch (e) {
-        onError("Erreur de lecture NFC : ${e.toString()}");
+        onError("Erreur de lecture NFC : ${e.toString().replaceAll('Exception: ', '')}");
       } finally {
         NfcManager.instance.stopSession();
       }

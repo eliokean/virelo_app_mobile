@@ -13,6 +13,8 @@ import 'package:virelo_core/offline_sync/offline_storage_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/nfc/nfc_payment_service.dart';
 
+import 'package:virelo_core/nfc/virelo_hce_client.dart';
+
 class GeneratePaymentQrDisplayPage extends StatefulWidget {
   final double amount;
   final String token; // Le token obfusqué pour le QR
@@ -36,7 +38,16 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
   @override
   void initState() {
     super.initState();
+    // Active l'émulation de carte NFC sans contact (HCE) pour transmission instantanée
+    VireloHceClient.setPayload(widget.token);
     _startPolling();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    VireloHceClient.clearPayload();
+    super.dispose();
   }
 
   void _startPolling() {
@@ -66,12 +77,6 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
         // Ignore errors during polling, we'll just try again on the next tick
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
   }
 
   @override
