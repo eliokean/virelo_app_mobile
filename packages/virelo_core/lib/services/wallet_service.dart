@@ -36,6 +36,32 @@ class WalletService {
     }
   }
 
+  Future<Map<String, dynamic>> getHistory({int page = 1, int perPage = 10}) async {
+    try {
+      final response = await _apiClient.dio.get(
+        ApiConstants.walletHistory,
+        queryParameters: {
+          'page': page,
+          'per_page': perPage,
+        },
+      );
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      } else if (response.data is List) {
+        return {
+          'data': List<dynamic>.from(response.data),
+          'has_more': false,
+          'current_page': page,
+          'total': (response.data as List).length,
+        };
+      }
+      return {'data': [], 'has_more': false, 'current_page': page, 'total': 0};
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
+      throw Exception(msg ?? 'Erreur lors de la récupération de l\'historique');
+    }
+  }
+
   Future<Map<String, dynamic>> topUp(double amount, String provider) async {
     try {
       final response = await _apiClient.dio.post(

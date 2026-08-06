@@ -7,16 +7,11 @@ import 'package:virelo_core/services/wallet_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../../payment/presentation/pages/scan_invoice_page.dart';
 import '../widgets/wallet_header.dart';
 import '../widgets/balance_hero_card.dart';
 import '../widgets/wallet_actions_bar.dart';
-import '../widgets/send_again_section.dart';
 import '../widgets/recent_activity_list.dart';
-import '../widgets/offline_escrow_banner.dart';
 import '../pages/allocate_offline_budget_page.dart';
-import '../../../transfer/presentation/pages/request_offline_payment_page.dart';
-import '../../../transfer/presentation/pages/scan_contact_page.dart';
 import 'offline_sync_queue_page.dart';
 import 'offline_client_history_page.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
@@ -49,23 +44,58 @@ class _WalletPageState extends State<WalletPage> {
     _loadCachedData();
     _fetchBalance();
     _fetchOfflineBudget();
+    _fetchRecentActivities();
   }
 
   Future<void> _loadCachedData() async {
     try {
       final name = await _storage.read(key: 'user_name') ?? "Client";
       final cachedBal = await _storage.read(key: 'cached_balance');
-      final offlineHistory = await _offlineStorage.getOfflineTransactions();
+      final cachedHistory = await _offlineStorage.getFullCachedHistory();
       
       if (mounted) {
         setState(() {
           _userName = name;
           if (cachedBal != null) _balance = cachedBal;
-          _activities = offlineHistory;
+          if (_activities.isEmpty && cachedHistory.isNotEmpty) {
+            _activities = cachedHistory.take(6).toList();
+          }
           _isLoading = false;
         });
       }
     } catch (_) {}
+  }
+
+  Future<void> _fetchRecentActivities() async {
+    try {
+      final historyData = await _walletService.getHistory(page: 1, perPage: 6);
+      final List<dynamic> serverTx = (historyData['data'] as List<dynamic>?) ?? [];
+      
+      // Sauvegarder dans le cache local pour consultation hors-ligne
+      if (serverTx.isNotEmpty) {
+        await _offlineStorage.saveCachedServerTransactions(serverTx);
+      }
+
+      // Récupérer les éventuelles transactions hors-ligne locales
+      final offlineTx = await _offlineStorage.getOfflineTransactions();
+      
+      // Les transactions hors-ligne non synchronisées en priorité, puis serveur
+      final combined = <dynamic>[...offlineTx, ...serverTx];
+      
+      if (mounted) {
+        setState(() {
+          _activities = combined.take(6).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('==== ERREUR FETCH RECENT ACTIVITIES (FALLBACK OFFLINE): $e ====');
+      final fallback = await _offlineStorage.getFullCachedHistory();
+      if (mounted && fallback.isNotEmpty) {
+        setState(() {
+          _activities = fallback.take(6).toList();
+        });
+      }
+    }
   }
 
   Future<void> _fetchOfflineBudget() async {
@@ -90,8 +120,6 @@ class _WalletPageState extends State<WalletPage> {
     } catch (_) {}
   }
 
-
-
   Future<void> _fetchBalance() async {
     try {
       final data = await _walletService.getBalance();
@@ -111,6 +139,14 @@ class _WalletPageState extends State<WalletPage> {
         });
       }
     }
+  }
+
+  Future<void> _refreshAll() async {
+    await Future.wait([
+      _fetchBalance(),
+      _fetchOfflineBudget(),
+      _fetchRecentActivities(),
+    ]);
   }
 
   @override
@@ -137,8 +173,13 @@ class _WalletPageState extends State<WalletPage> {
                   children: [
                     const SizedBox(height: AppSpacing.md),
                     WalletHeader(userName: _userName),
-                    BalanceHeroCard(balance: _balance, isLoading: _isLoading),
-                    const SizedBox(height: AppSpacing.xxl),
+                    BalanceHeroCard(
+                      balance: _balance,
+                      offlineBudget: _offlineBudget,
+                      isLoading: _isLoading,
+                      onOfflineTap: _showOfflineOptions,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
                 ),
               ),
@@ -146,20 +187,13 @@ class _WalletPageState extends State<WalletPage> {
             
             // Middle Dark Section (Action Bar)
             Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: WalletActionsBar(
                 onRefresh: () {
-                  _fetchBalance();
-                  _fetchOfflineBudget();
-                  _loadCachedData();
+                  _refreshAll();
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
-              child: _buildOfflinePocket(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
 
             // Bottom White Section
             Expanded(
@@ -175,11 +209,7 @@ class _WalletPageState extends State<WalletPage> {
                     top: Radius.circular(40),
                   ),
                   child: RefreshIndicator(
-                    onRefresh: () async {
-                      await _fetchBalance();
-                      await _fetchOfflineBudget();
-                      await _loadCachedData(); // Recharger depuis Hive aussi
-                    },
+                    onRefresh: _refreshAll,
                     color: const Color(0xFF161A22),
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -187,7 +217,11 @@ class _WalletPageState extends State<WalletPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          RecentActivityList(activities: _activities, isLoading: _isLoading),
+                          RecentActivityList(
+                            activities: _activities,
+                            isLoading: _isLoading,
+                            onRefresh: _fetchRecentActivities,
+                          ),
                           const SizedBox(height: AppSpacing.huge),
                         ],
                       ),
@@ -202,124 +236,179 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
-  Widget _buildOfflinePocket() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F2228),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF2C3138)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
+  void _showOfflineOptions() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1F2228),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header de la poche
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+      builder: (ctx) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFB5E48C).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                    child: const Icon(LucideIcons.wifiOff, color: Color(0xFFB5E48C), size: 18),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text('Poche Hors Ligne', style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFB5E48C).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(LucideIcons.wifiOff, color: Color(0xFFB5E48C), size: 22),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Séquestre Hors-Ligne',
+                              style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Budget sécurisé pour payer sans réseau',
+                              style: AppTextStyles.bodySmall.copyWith(color: Colors.white60),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C3138),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Montant disponible hors-ligne',
+                          style: AppTextStyles.labelSmall.copyWith(color: const Color(0xFF8B93A8)),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '${_offlineBudget.toInt()}',
+                              style: AppTextStyles.displayLarge.copyWith(color: Colors.white, fontSize: 32),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'FCFA',
+                              style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF8B93A8)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  // Recharger
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C3138),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(LucideIcons.plus, color: Colors.white, size: 20),
+                    ),
+                    title: Text('Allouer / Recharger le budget', style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
+                    subtitle: Text('Sécuriser un nouveau montant', style: AppTextStyles.bodySmall.copyWith(color: Colors.white60)),
+                    trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AllocateOfflineBudgetPage()),
+                      );
+                      if (result == true) {
+                        _refreshAll();
+                      }
+                    },
+                  ),
+                  const Divider(color: Color(0xFF2C3138)),
+                  // Historique
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C3138),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(LucideIcons.history, color: Colors.white, size: 20),
+                    ),
+                    title: Text('Historique des paiements offline', style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
+                    subtitle: Text('Voir les transactions locales', style: AppTextStyles.bodySmall.copyWith(color: Colors.white60)),
+                    trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const OfflineClientHistoryPage()),
+                      );
+                      _refreshAll();
+                    },
+                  ),
+                  const Divider(color: Color(0xFF2C3138)),
+                  // File de synchronisation
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C3138),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(LucideIcons.uploadCloud, color: Colors.white, size: 20),
+                    ),
+                    title: Text('File de synchronisation', style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
+                    subtitle: Text('Synchroniser avec le serveur', style: AppTextStyles.bodySmall.copyWith(color: Colors.white60)),
+                    trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const OfflineSyncQueuePage()),
+                      );
+                      _refreshAll();
+                    },
+                  ),
                 ],
               ),
-              GestureDetector(
-                onTap: () async {
-                   await Navigator.push(context, MaterialPageRoute(builder: (_) => const OfflineClientHistoryPage()));
-                   _fetchOfflineBudget();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2C3138),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text('Historique', style: AppTextStyles.labelSmall.copyWith(color: const Color(0xFF8B93A8))),
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          // Budget
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text('$_offlineBudget', style: AppTextStyles.displayLarge.copyWith(color: Colors.white, fontSize: 32)),
-              const SizedBox(width: 8),
-              Text('FCFA', style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF8B93A8))),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          // Actions
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanInvoicePage())),
-                  icon: const Icon(LucideIcons.qrCode, size: 18),
-                  label: const Text('Payer', style: TextStyle(fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB5E48C),
-                    foregroundColor: const Color(0xFF161A22),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                     final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const AllocateOfflineBudgetPage()));
-                     if (result == true) { _fetchBalance(); _fetchOfflineBudget(); }
-                  },
-                  icon: const Icon(LucideIcons.plus, size: 18),
-                  label: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2C3138),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              IconButton(
-                onPressed: () async {
-                   await Navigator.push(context, MaterialPageRoute(builder: (_) => const OfflineSyncQueuePage()));
-                   _fetchBalance();
-                },
-                icon: const Icon(LucideIcons.uploadCloud, color: Colors.white, size: 20),
-                style: IconButton.styleFrom(
-                  backgroundColor: const Color(0xFF2C3138),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  padding: const EdgeInsets.all(14),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

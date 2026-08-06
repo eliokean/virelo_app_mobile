@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
-import 'package:virelo_core/services/auth_service.dart';
-import 'package:virelo_core/network/api_client.dart';
-import '../../../auth/presentation/pages/login_page.dart';
-import '../../../kyc/presentation/pages/kyc_upload_page.dart';
+import '../../../profile/presentation/pages/settings_page.dart';
 
 class WalletHeader extends StatelessWidget {
   final String userName;
@@ -41,26 +38,13 @@ class WalletHeader extends StatelessWidget {
           ),
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const KycUploadPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
             },
-            child: _buildIconButton(LucideIcons.user),
+            child: _buildIconButton(LucideIcons.settings),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          GestureDetector(
-            onTap: () async {
-              final authService = AuthService(ApiClient());
-              await authService.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
-              }
-            },
-            child: _buildIconButton(LucideIcons.logOut),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          _buildIconButton(LucideIcons.bell),
         ],
       ),
     );
@@ -75,7 +59,7 @@ class WalletHeader extends StatelessWidget {
       ),
       child: Icon(
         icon,
-        size: 20,
+        size: 22,
         color: const Color(0xFF161A22),
       ),
     );

@@ -6,12 +6,16 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 class BalanceHeroCard extends StatefulWidget {
   final String balance;
+  final double offlineBudget;
   final bool isLoading;
+  final VoidCallback? onOfflineTap;
   
   const BalanceHeroCard({
     super.key,
     required this.balance,
+    this.offlineBudget = 0.0,
     this.isLoading = false,
+    this.onOfflineTap,
   });
 
   @override
@@ -132,6 +136,66 @@ class _BalanceHeroCardState extends State<BalanceHeroCard> {
                       ),
                     ),
               ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Offline Escrow Pill
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onOfflineTap,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161A22).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  border: Border.all(
+                    color: const Color(0xFF161A22).withOpacity(0.12),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF161A22),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.wifiOff,
+                        color: Colors.white,
+                        size: 11,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Séquestre Offline : ',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: const Color(0xFF161A22).withOpacity(0.75),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      _isVisible
+                          ? '${_formatBalance(widget.offlineBudget.toInt().toString())} FCFA'
+                          : '••••••',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: const Color(0xFF161A22),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      LucideIcons.chevronRight,
+                      size: 13,
+                      color: Color(0xFF161A22),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

@@ -143,142 +143,148 @@ class WalletActionsBar extends StatelessWidget {
   void _showPaymentOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF1F2228),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Mode de paiement',
-                  style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Choisissez comment vous souhaitez régler votre achat',
-                  style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // Option 1 : NFC Sans Contact Direct
-                Material(
-                  color: const Color(0xFF2C3138),
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const GeneratePaymentQrAmountPage()),
-                      );
-                      onRefresh?.call();
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.contactless, color: AppColors.accent, size: 28),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Sans Contact (NFC)',
-                                  style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Saisir le montant et approcher du terminal',
-                                  style: AppTextStyles.bodySmall.copyWith(color: Colors.white60),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(LucideIcons.chevronRight, color: Colors.white38),
-                        ],
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Mode de paiement',
+                    style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Choisissez comment vous souhaitez régler votre achat',
+                    style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
 
-                // Option 2 : Scanner la facture QR Code
-                Material(
-                  color: const Color(0xFF2C3138),
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
+                  // Option 1 : NFC Sans Contact Direct
+                  Material(
+                    color: const Color(0xFF2C3138),
                     borderRadius: BorderRadius.circular(16),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ScanInvoicePage()),
-                      );
-                      onRefresh?.call();
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6C63FF).withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const GeneratePaymentQrAmountPage()),
+                        );
+                        onRefresh?.call();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.contactless, color: AppColors.accent, size: 28),
                             ),
-                            child: const Icon(LucideIcons.qrCode, color: Color(0xFF6C63FF), size: 28),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Scanner la Facture (QR)',
-                                  style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Scanner le QR code affiché par le marchand',
-                                  style: AppTextStyles.bodySmall.copyWith(color: Colors.white60),
-                                ),
-                              ],
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Sans Contact (NFC)',
+                                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Saisir le montant et approcher du terminal',
+                                    style: AppTextStyles.bodySmall.copyWith(color: Colors.white60),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const Icon(LucideIcons.chevronRight, color: Colors.white38),
-                        ],
+                            const Icon(LucideIcons.chevronRight, color: Colors.white38),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Option 2 : Scanner la facture QR Code
+                  Material(
+                    color: const Color(0xFF2C3138),
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ScanInvoicePage()),
+                        );
+                        onRefresh?.call();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6C63FF).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(LucideIcons.qrCode, color: Color(0xFF6C63FF), size: 28),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Scanner la Facture (QR)',
+                                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Scanner le QR code affiché par le marchand',
+                                    style: AppTextStyles.bodySmall.copyWith(color: Colors.white60),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(LucideIcons.chevronRight, color: Colors.white38),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ),
             ),
           ),
         );

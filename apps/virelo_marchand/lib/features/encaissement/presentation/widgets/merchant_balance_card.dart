@@ -6,13 +6,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 class MerchantBalanceCard extends StatelessWidget {
   final String balance;
   final bool isLoading;
-  final VoidCallback? onWithdrawal;
   
   const MerchantBalanceCard({
     super.key,
     required this.balance,
     this.isLoading = false,
-    this.onWithdrawal,
   });
 
   @override
@@ -31,7 +29,7 @@ class MerchantBalanceCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF161A22),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
@@ -87,22 +85,6 @@ class MerchantBalanceCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          if (onWithdrawal != null)
-            ElevatedButton.icon(
-              onPressed: onWithdrawal,
-              icon: const Icon(LucideIcons.arrowUpRight, size: 18, color: Colors.white),
-              label: const Text('Retirer'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF161A22),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-            ),
         ],
       ),
     );

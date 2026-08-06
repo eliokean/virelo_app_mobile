@@ -161,5 +161,45 @@ class OfflineStorageService {
     final box = await _getBox();
     await box.delete('offline_history_$userId');
   }
+
+  // --- Gestion du Cache de l'Historique Global (Mode Hors-ligne) ---
+
+  Future<void> saveCachedServerTransactions(List<dynamic> transactions) async {
+    final userId = await _authService.getUserId();
+    if (userId == null) return;
+    final box = await _getBox();
+    await box.put('cached_server_history_$userId', jsonEncode(transactions));
+  }
+
+  Future<List<dynamic>> getCachedServerTransactions() async {
+    final userId = await _authService.getUserId();
+    if (userId == null) return [];
+    final box = await _getBox();
+    final dataStr = box.get('cached_server_history_$userId');
+    if (dataStr == null) return [];
+    try {
+      final List<dynamic> data = jsonDecode(dataStr.toString());
+      return data;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> getFullCachedHistory() async {
+    final offlineTx = await getOfflineTransactions();
+    final serverTx = await getCachedServerTransactions();
+
+    final List<dynamic> combined = [];
+    final Set<String> seenIds = {};
+
+    for (final tx in [...offlineTx, ...serverTx]) {
+      final id = (tx['id'] ?? tx['uuid'] ?? tx['local_uuid'])?.toString();
+      if (id != null && seenIds.contains(id)) continue;
+      if (id != null) seenIds.add(id);
+      combined.add(tx);
+    }
+
+    return combined;
+  }
 }
 

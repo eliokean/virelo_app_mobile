@@ -58,7 +58,7 @@ class _LoginNetworkPinPageState extends State<LoginNetworkPinPage> {
       await _authService.saveLocalPin(_pin);
       
       if (mounted) {
-        if (response != null && response['requires_device_verification'] == true) {
+        if (response['requires_device_verification'] == true) {
           // Si le backend a détecté un nouvel appareil et a généré un OTP
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -74,10 +74,11 @@ class _LoginNetworkPinPageState extends State<LoginNetworkPinPage> {
         }
       }
     } catch (e) {
+      debugPrint('==== LOGIN ERROR: $e ====');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: AppColors.error,
           ),
         );

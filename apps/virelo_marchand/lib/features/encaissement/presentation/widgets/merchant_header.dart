@@ -2,22 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
-import 'package:virelo_core/services/auth_service.dart';
-import 'package:virelo_core/network/api_client.dart';
-import '../../../../config/routes/route_names.dart';
-import 'package:go_router/go_router.dart';
+import '../../../profile/presentation/pages/merchant_settings_page.dart';
 
 class MerchantHeader extends StatelessWidget {
   final String merchantName;
+  final VoidCallback? onSettingsChanged;
 
-  const MerchantHeader({super.key, required this.merchantName});
+  const MerchantHeader({
+    super.key,
+    required this.merchantName,
+    this.onSettingsChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -42,35 +44,41 @@ class MerchantHeader extends StatelessWidget {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () async {
-              final authService = AuthService(ApiClient());
-              await authService.logout();
-              if (context.mounted) {
-                // Return to login logic, assuming you have a way to handle it or just clear auth and redirect
-                // Here we just navigate back to Auth/Login if route exists
-              }
-            },
-            child: _buildIconButton(LucideIcons.logOut),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MerchantSettingsPage(merchantName: merchantName),
+                  ),
+                );
+                onSettingsChanged?.call();
+              },
+              borderRadius: BorderRadius.circular(50),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x0A000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  LucideIcons.settings,
+                  size: 20,
+                  color: Color(0xFF161A22),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          _buildIconButton(LucideIcons.settings),
         ],
-      ),
-    );
-  }
-
-  Widget _buildIconButton(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        icon,
-        size: 20,
-        color: const Color(0xFF161A22),
       ),
     );
   }

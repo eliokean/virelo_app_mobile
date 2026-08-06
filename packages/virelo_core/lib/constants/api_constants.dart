@@ -20,6 +20,7 @@ class ApiConstants {
 
   // Wallet endpoints
   static const String walletBalance = '/wallets/balance';
+  static const String walletHistory = '/wallets/history';
   static const String initiateRecharge = '/recharges/initiate';
 
   // Sync / Telecollecte / Offline

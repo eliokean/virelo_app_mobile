@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/merchant_service.dart';
-import '../../../../config/routes/route_names.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import 'generate_invoice_amount_page.dart';
 import 'nfc_reader_page.dart';
@@ -52,11 +49,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       final statsResponse = await _merchantService.getStats();
       final statsData = statsResponse['data'] ?? statsResponse;
       
-      // La balance actuelle du wallet
       final wallet = statsData['wallet'];
-      
       final txResponse = await _merchantService.getTransactions();
-      final txData = txResponse; // getTransactions already returns List<dynamic>
+      final txData = txResponse;
 
       if (mounted) {
         setState(() {
@@ -115,6 +110,210 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     }
   }
 
+  void _showCollectOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenH,
+              vertical: AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Encaisser un Paiement',
+                      style: AppTextStyles.headlineMedium.copyWith(
+                        color: const Color(0xFF161A22),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(LucideIcons.x, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Choisissez le moyen d\'encaissement avec le client :',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: const Color(0xFF8B93A8),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Option 1: QR Code Facture
+                _buildCollectOptionTile(
+                  icon: LucideIcons.qrCode,
+                  iconColor: const Color(0xFF161A22),
+                  iconBgColor: const Color(0xFFB5E48C),
+                  title: 'Facture Dynamique (QR Code)',
+                  subtitle: 'Saisissez un montant et faites scanner le code par le client',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GenerateInvoiceAmountPage(
+                          merchantId: _merchantId,
+                          merchantName: _merchantName,
+                        ),
+                      ),
+                    ).then((_) => _loadDashboardData());
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Option 2: Sans Contact (NFC TPE)
+                _buildCollectOptionTile(
+                  icon: Icons.contactless,
+                  iconColor: Colors.white,
+                  iconBgColor: const Color(0xFF161A22),
+                  title: 'Terminal Sans Contact (NFC)',
+                  subtitle: 'Rapprochement direct du téléphone ou de la carte client',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NfcReaderPage(),
+                      ),
+                    ).then((_) => _loadDashboardData());
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCollectOptionTile({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9F9FA),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFEFEFEF)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: iconColor, size: 26),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: const Color(0xFF161A22),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: const Color(0xFF8B93A8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              const Icon(LucideIcons.chevronRight, size: 20, color: Color(0xFF8B93A8)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: const Color(0xFF2D2E33),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        child: Container(
+          height: 72,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: AppTextStyles.button.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 14,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -138,11 +337,54 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                 child: Column(
                   children: [
                     const SizedBox(height: AppSpacing.md),
-                    MerchantHeader(merchantName: _merchantName),
+                    MerchantHeader(
+                      merchantName: _merchantName,
+                      onSettingsChanged: _loadDashboardData,
+                    ),
                     MerchantBalanceCard(
                       balance: _balance, 
                       isLoading: _isLoading,
-                      onWithdrawal: () async {
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Middle Dark Section (Actions & Télécollecte)
+            // Bannière de Télécollecte si transactions offline en attente
+            if (_pendingSyncCount > 0) ...[
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+                child: _buildSyncBanner(),
+              ),
+            ],
+
+            // Barre d'actions factorisée : Encaisser + Retirer (Avec picto conforme à la charte client)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenH,
+                vertical: AppSpacing.lg,
+              ),
+              child: Row(
+                children: [
+                  // Action 1: ENCAISSER (Factorisé : QR + NFC)
+                  Expanded(
+                    child: _buildActionButton(
+                      label: 'Encaisser',
+                      icon: LucideIcons.arrowDownLeft,
+                      onTap: () => _showCollectOptions(context),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+
+                  // Action 2: RETIRER (Déplacé dans la zone d'action)
+                  Expanded(
+                    child: _buildActionButton(
+                      label: 'Retirer',
+                      icon: LucideIcons.arrowUpRight,
+                      onTap: () async {
                         final shouldRefresh = await Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -156,83 +398,12 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                         }
                       },
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
-                  ],
-                ),
-              ),
-            ),
-            
-            // Middle Dark Section (Actions)
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Bannière de Sync si besoin
-            if (_pendingSyncCount > 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
-                child: _buildSyncBanner(),
-              ),
-              
-            if (_pendingSyncCount > 0)
-              const SizedBox(height: AppSpacing.md),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Actions',
-                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildOfflineActionCard(
-                          context,
-                          title: 'Encaisser (QR)',
-                          icon: LucideIcons.qrCode,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => GenerateInvoiceAmountPage(
-                                  merchantId: _merchantId,
-                                  merchantName: _merchantName,
-                                ),
-                              ),
-                            ).then((_) {
-                              _loadDashboardData();
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: _buildOfflineActionCard(
-                          context,
-                          title: 'Sans Contact',
-                          icon: Icons.contactless,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const NfcReaderPage(),
-                              ),
-                            ).then((_) {
-                              _loadDashboardData();
-                            });
-                          },
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
 
-            // Bottom White Section
+            // Bottom White Section (Transactions récentes)
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -269,45 +440,6 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     );
   }
 
-  Widget _buildOfflineActionCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-    bool isAccent = false,
-  }) {
-    return Material(
-      color: const Color(0xFF1F2228),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: isAccent ? const Color(0xFF94A3B8) : const Color(0xFFB5E48C),
-                size: 24,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: isAccent ? const Color(0xFF94A3B8) : const Color(0xFFB5E48C),
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSyncBanner() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -320,7 +452,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
+              color: Colors.orange.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: const Icon(LucideIcons.wifiOff, color: Colors.orange, size: 20),
@@ -350,6 +482,21 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
               width: 20,
               height: 20,
               child: CircularProgressIndicator(color: Colors.orange, strokeWidth: 2),
+            )
+          else
+            ElevatedButton(
+              onPressed: _syncOfflineTransactions,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB5E48C),
+                foregroundColor: const Color(0xFF161A22),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Synchroniser', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             ),
         ],
       ),

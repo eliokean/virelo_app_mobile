@@ -9,11 +9,18 @@ import 'package:virelo_core/offline_sync/hive_manager.dart';
 import 'core/services/offline_sync_service.dart';
 import 'core/services/auto_sync_manager.dart';
 
+import 'package:intl/date_symbol_data_local.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialisation de Hive (Approche Hybride de Grade Entreprise)
   await HiveManager.openOfflineBox();
+
+  // Initialisation de la localisation française pour les dates
+  try {
+    await initializeDateFormatting('fr_FR', null);
+  } catch (_) {}
 
   runApp(const VireloApp());
 }
