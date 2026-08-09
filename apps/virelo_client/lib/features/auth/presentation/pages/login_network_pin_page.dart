@@ -7,6 +7,7 @@ import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import '../../../wallet/presentation/pages/wallet_page.dart';
 import 'device_verification_page.dart';
+import 'forgot_pin_page.dart';
 
 class LoginNetworkPinPage extends StatefulWidget {
   final String phone;
@@ -52,7 +53,7 @@ class _LoginNetworkPinPageState extends State<LoginNetworkPinPage> {
 
     try {
       // Le PIN fait office de mot de passe pour le backend
-      final response = await _authService.login(widget.phone, _pin);
+      final response = await _authService.login(widget.phone, _pin, userType: 'client');
       
       // Sauvegarde du PIN en local
       await _authService.saveLocalPin(_pin);
@@ -125,6 +126,18 @@ class _LoginNetworkPinPageState extends State<LoginNetworkPinPage> {
               onDigitTap: _onDigitTap,
               onDeleteTap: _onDeleteTap,
               showBiometric: false, // Pas de biométrie pour la première connexion réseau
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ForgotPinPage(initialPhone: widget.phone)),
+                );
+              },
+              child: Text(
+                'Code PIN oublié ?',
+                style: AppTextStyles.labelMedium.copyWith(color: AppColors.accent),
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
           ],

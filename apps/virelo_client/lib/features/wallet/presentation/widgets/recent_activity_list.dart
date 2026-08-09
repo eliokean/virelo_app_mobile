@@ -4,6 +4,7 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import '../../../history/presentation/pages/history_page.dart';
 import 'package:intl/intl.dart';
+import 'package:virelo_design_system/widgets/transaction_details_bottom_sheet.dart';
 
 class RecentActivityList extends StatelessWidget {
   final List<dynamic> activities;
@@ -106,9 +107,15 @@ class RecentActivityList extends StatelessWidget {
             final formattedAmount = NumberFormat('#,###', 'fr_FR').format(amountNum).replaceAll(',', ' ');
             final amountStr = '${isNegative ? '-' : '+'}$formattedAmount FCFA';
 
-            final isPending = activity['uuid'] != null || activity['status'] == 'pending_merchant_validation';
-            final subtitleText = isPending && activity['status'] == 'pending_merchant_validation' 
-                ? 'En attente du marchand' 
+            final statusStr = activity['status']?.toString().toLowerCase();
+            final isPending = statusStr == 'pending_merchant_validation' || 
+                              statusStr == 'pending_merchant_sync' || 
+                              statusStr == 'pending';
+
+            final subtitleText = isPending
+                ? (statusStr == 'pending_merchant_validation' 
+                    ? 'En attente du marchand' 
+                    : 'En attente de synchro')
                 : (activity['subtitle'] ?? _formatDate(activity['date'] ?? activity['timestamp'] ?? ''));
 
             return Padding(
@@ -120,6 +127,9 @@ class RecentActivityList extends StatelessWidget {
                 amount: amountStr,
                 isNegative: isNegative,
                 isPending: isPending,
+                onTap: () {
+                  TransactionDetailsBottomSheet.show(context, activity);
+                },
               ),
             );
           }),
@@ -134,8 +144,12 @@ class RecentActivityList extends StatelessWidget {
     required String amount,
     required bool isNegative,
     bool isPending = false,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -179,7 +193,7 @@ class RecentActivityList extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  isPending ? "En attente de synchro" : subtitle,
+                  subtitle,
                   style: AppTextStyles.labelSmall.copyWith(
                     color: isPending ? const Color(0xFFE65100) : const Color(0xFF8B93A8),
                     fontWeight: isPending ? FontWeight.w600 : FontWeight.normal,
@@ -199,6 +213,7 @@ class RecentActivityList extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

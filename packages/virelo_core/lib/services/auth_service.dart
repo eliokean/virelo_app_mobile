@@ -44,18 +44,24 @@ class AuthService {
 
   // ── AUTHENTICATION BACKEND ───────────────────────────────────
 
-  Future<Map<String, dynamic>> login(String phone, String password) async {
+  Future<Map<String, dynamic>> login(String phone, String password, {String? userType}) async {
     try {
       final deviceInfo = await getDeviceFingerprint();
 
+      final Map<String, dynamic> requestData = {
+        'phone': phone,
+        'password': password,
+        'device_id': deviceInfo['device_id'],
+        'has_hardware_keystore': deviceInfo['has_hardware_keystore'],
+      };
+      
+      if (userType != null) {
+        requestData['user_type'] = userType;
+      }
+
       final response = await _apiClient.dio.post(
         ApiConstants.login,
-        data: {
-          'phone': phone,
-          'password': password,
-          'device_id': deviceInfo['device_id'],
-          'has_hardware_keystore': deviceInfo['has_hardware_keystore'],
-        },
+        data: requestData,
       );
 
       final data = response.data;
@@ -245,4 +251,20 @@ class AuthService {
       return false;
     }
   }
+
+  // ── ONBOARDING ───────────────────────────────────────────────
+
+  Future<bool> hasSeenOnboarding() async {
+    final seen = await _secureStorage.read(key: 'has_seen_onboarding');
+    return seen == 'true';
+  }
+
+  Future<void> setOnboardingSeen() async {
+    await _secureStorage.write(key: 'has_seen_onboarding', value: 'true');
+  }
+
+  Future<void> resetOnboarding() async {
+    await _secureStorage.delete(key: 'has_seen_onboarding');
+  }
 }
+

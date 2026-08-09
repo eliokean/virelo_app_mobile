@@ -68,8 +68,18 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
       
       if (mounted) {
         setState(() => _isTransferring = false);
+        
+        final isPending = response.data['is_pending_claim'] == true;
+        final message = isPending 
+            ? 'Transfert en attente. Un SMS a été envoyé au destinataire pour l\'inviter à s\'inscrire.'
+            : 'Transfert effectué avec succès !';
+            
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transfert effectué avec succès !')),
+          SnackBar(
+            content: Text(message),
+            backgroundColor: isPending ? const Color(0xFFE65100) : const Color(0xFF8DC973),
+            duration: const Duration(seconds: 4),
+          ),
         );
         Navigator.of(context).popUntil((route) => route.isFirst);
       }

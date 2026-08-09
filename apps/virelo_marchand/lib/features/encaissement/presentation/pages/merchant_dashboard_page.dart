@@ -487,7 +487,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
             ElevatedButton(
               onPressed: _syncOfflineTransactions,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB5E48C),
+                backgroundColor: AppColors.accent,
                 foregroundColor: const Color(0xFF161A22),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 minimumSize: Size.zero,

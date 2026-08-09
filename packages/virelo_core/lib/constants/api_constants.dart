@@ -1,6 +1,15 @@
 class ApiConstants {
-  // L'IP locale utilisée pour tester avec le backend Laravel (hors Docker)
-  static const String baseUrl = 'https://stimulate-bladder-hurry.ngrok-free.dev';
+  /// Base URL configurable via variable d'environnement au lancement / build :
+  /// flutter run --dart-define=API_BASE_URL=https://votre-url-ngrok.ngrok-free.dev
+  /// ou
+  /// flutter run --dart-define=NGROK_URL=https://votre-url-ngrok.ngrok-free.dev
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: String.fromEnvironment(
+      'NGROK_URL',
+      defaultValue: 'https://stimulate-bladder-hurry.ngrok-free.dev',
+    ),
+  );
 
   // Auth endpoints
   static const String register = '/auth/register';

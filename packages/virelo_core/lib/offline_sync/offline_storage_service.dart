@@ -155,6 +155,43 @@ class OfflineStorageService {
     await box.put(key, jsonEncode(updatedHistory));
   }
 
+  Future<void> removeOfflineTransactionsByUuids(List<String> uuids) async {
+    final userId = await _authService.getUserId();
+    if (userId == null || uuids.isEmpty) return;
+
+    final box = await _getBox();
+    final key = 'offline_history_$userId';
+    final historyStr = box.get(key) ?? '[]';
+    final List<dynamic> history = jsonDecode(historyStr.toString());
+
+    final uuidSet = uuids.toSet();
+    final updatedHistory = history.where((e) {
+      final itemUuid = (e as Map)['uuid']?.toString();
+      return itemUuid == null || !uuidSet.contains(itemUuid);
+    }).toList();
+
+    await box.put(key, jsonEncode(updatedHistory));
+  }
+
+  Future<void> cleanSynchronizedTransactions(List<dynamic> serverTransactions) async {
+    final userId = await _authService.getUserId();
+    if (userId == null || serverTransactions.isEmpty) return;
+
+    final serverUuids = <String>{};
+    for (final tx in serverTransactions) {
+      if (tx is Map) {
+        if (tx['uuid'] != null) serverUuids.add(tx['uuid'].toString());
+        if (tx['uuid_client'] != null) serverUuids.add(tx['uuid_client'].toString());
+        if (tx['reference'] != null) serverUuids.add(tx['reference'].toString());
+        if (tx['id'] != null) serverUuids.add(tx['id'].toString());
+      }
+    }
+
+    if (serverUuids.isNotEmpty) {
+      await removeOfflineTransactionsByUuids(serverUuids.toList());
+    }
+  }
+
   Future<void> clearOfflineTransactions() async {
     final userId = await _authService.getUserId();
     if (userId == null) return;
@@ -169,6 +206,9 @@ class OfflineStorageService {
     if (userId == null) return;
     final box = await _getBox();
     await box.put('cached_server_history_$userId', jsonEncode(transactions));
+    
+    // Nettoyer automatiquement les transactions locales synchronisées
+    await cleanSynchronizedTransactions(transactions);
   }
 
   Future<List<dynamic>> getCachedServerTransactions() async {
@@ -192,11 +232,23 @@ class OfflineStorageService {
     final List<dynamic> combined = [];
     final Set<String> seenIds = {};
 
-    for (final tx in [...offlineTx, ...serverTx]) {
-      final id = (tx['id'] ?? tx['uuid'] ?? tx['local_uuid'])?.toString();
-      if (id != null && seenIds.contains(id)) continue;
-      if (id != null) seenIds.add(id);
+    // 1. Les transactions serveur confirmées sont prioritaires
+    for (final tx in serverTx) {
+      if (tx is Map) {
+        final id = (tx['id'] ?? tx['uuid'] ?? tx['uuid_client'] ?? tx['reference'])?.toString();
+        if (id != null) seenIds.add(id);
+      }
       combined.add(tx);
+    }
+
+    // 2. N'ajouter les offlineTx que si elles ne sont pas déjà sur le serveur
+    for (final tx in offlineTx) {
+      if (tx is Map) {
+        final id = (tx['uuid'] ?? tx['id'] ?? tx['local_uuid'])?.toString();
+        if (id != null && seenIds.contains(id)) continue;
+        if (id != null) seenIds.add(id);
+      }
+      combined.insert(0, tx); // Les hors ligne récentes en haut
     }
 
     return combined;

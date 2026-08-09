@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:virelo_core/services/wallet_service.dart';
+import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/network/api_client.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
@@ -13,8 +17,47 @@ class DepositAmountPage extends StatefulWidget {
   State<DepositAmountPage> createState() => _DepositAmountPageState();
 }
 
+
 class _DepositAmountPageState extends State<DepositAmountPage> {
   String _amount = "0";
+  String _currentBalance = "0";
+  bool _isLoadingBalance = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _fetchBalance();
+  }
+
+  Future<void> _fetchBalance() async {
+    const storage = FlutterSecureStorage();
+    final cachedBal = await storage.read(key: 'cached_balance');
+    if (cachedBal != null && mounted) {
+      setState(() {
+        _currentBalance = cachedBal;
+        _isLoadingBalance = false;
+      });
+    }
+
+    try {
+      final apiClient = ApiClient();
+      final authService = AuthService(apiClient);
+      final walletService = WalletService(apiClient, authService);
+      final data = await walletService.getBalance();
+      final newBalance = data['balance']?.toString() ?? "0";
+      await storage.write(key: 'cached_balance', value: newBalance);
+      if (mounted) {
+        setState(() {
+          _currentBalance = newBalance;
+          _isLoadingBalance = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingBalance = false);
+      }
+    }
+  }
 
   void _appendDigit(String digit) {
     setState(() {
@@ -137,13 +180,19 @@ class _DepositAmountPageState extends State<DepositAmountPage> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            'Solde actuel: 12 329 FCFA',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: const Color(0xFF8B93A8),
-                              letterSpacing: 1.2,
-                            ),
-                          ),
+                          _isLoadingBalance 
+                              ? const SizedBox(
+                                  height: 14, 
+                                  width: 14, 
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B93A8))
+                                )
+                              : Text(
+                                  'Solde actuel: $_currentBalance FCFA',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: const Color(0xFF8B93A8),
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
                         ],
                       ),
                     ),

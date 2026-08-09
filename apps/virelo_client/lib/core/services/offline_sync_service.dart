@@ -55,7 +55,7 @@ class OfflineSyncService {
 
       for (var uuid in uuids) {
         final status = statuses[uuid];
-        if (status == 'completed') {
+        if (status == 'completed' || status == 'success' || status == 'synchronized') {
           await _offlineStorage.removeOfflineTransaction(uuid);
         }
       }

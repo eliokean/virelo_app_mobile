@@ -52,7 +52,7 @@ class _LoginNetworkPinPageState extends State<LoginNetworkPinPage> {
 
     try {
       // Le PIN fait office de mot de passe pour le backend
-      await _authService.login(widget.phone, _pin);
+      await _authService.login(widget.phone, _pin, userType: 'merchant');
       
       // Sauvegarde du PIN en local
       await _authService.saveLocalPin(_pin);

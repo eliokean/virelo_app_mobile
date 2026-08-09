@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:virelo_design_system/widgets/transaction_details_bottom_sheet.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/network/api_client.dart';
@@ -378,6 +379,9 @@ class _HistoryPageState extends State<HistoryPage> {
                                       amount: amountStr,
                                       isNegative: isNegative,
                                       isPending: isPending,
+                                      onTap: () {
+                                        TransactionDetailsBottomSheet.show(context, activity);
+                                      },
                                     ),
                                   );
                                 }),
@@ -473,71 +477,76 @@ class _HistoryPageState extends State<HistoryPage> {
     required String amount,
     required bool isNegative,
     bool isPending = false,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: isPending ? const Color(0xFFFFF3E0) : const Color(0xFFF5F5F5),
-              shape: BoxShape.circle,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(
-              isPending ? LucideIcons.clock : icon,
-              size: 22,
-              color: isPending ? const Color(0xFFE65100) : const Color(0xFF161A22),
+          ],
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: isPending ? const Color(0xFFFFF3E0) : const Color(0xFFF5F5F5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isPending ? LucideIcons.clock : icon,
+                size: 22,
+                color: isPending ? const Color(0xFFE65100) : const Color(0xFF161A22),
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: const Color(0xFF161A22),
-                    fontWeight: FontWeight.bold,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      color: const Color(0xFF161A22),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isPending ? "En attente de synchro" : subtitle,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: isPending ? const Color(0xFFE65100) : const Color(0xFF8B93A8),
-                    fontWeight: isPending ? FontWeight.w600 : FontWeight.normal,
+                  const SizedBox(height: 2),
+                  Text(
+                    isPending ? "En attente de synchro" : subtitle,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: isPending ? const Color(0xFFE65100) : const Color(0xFF8B93A8),
+                      fontWeight: isPending ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            amount,
-            style: AppTextStyles.labelLarge.copyWith(
-              color: isNegative ? const Color(0xFF161A22) : const Color(0xFF8DC973),
-              fontWeight: FontWeight.bold,
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              amount,
+              style: AppTextStyles.labelLarge.copyWith(
+                color: isNegative ? const Color(0xFF161A22) : const Color(0xFF8DC973),
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

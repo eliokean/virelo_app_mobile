@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
+import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
@@ -98,7 +99,7 @@ class _RequestOfflinePaymentPageState extends State<RequestOfflinePaymentPage> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _generateQr,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB5E48C),
+                      backgroundColor: AppColors.accent,
                       foregroundColor: const Color(0xFF161A22),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -140,7 +141,7 @@ class _RequestOfflinePaymentPageState extends State<RequestOfflinePaymentPage> {
                     icon: const Icon(LucideIcons.scan),
                     label: const Text('Scanner la Preuve du Client', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB5E48C),
+                      backgroundColor: AppColors.accent,
                       foregroundColor: const Color(0xFF161A22),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:intl/intl.dart';
+import 'package:virelo_design_system/widgets/transaction_details_bottom_sheet.dart';
 
 import '../../../historique/presentation/pages/history_page.dart';
 
@@ -75,7 +76,10 @@ class MerchantActivityList extends StatelessWidget {
           ...activities.take(5).map((activity) { 
             final amount = double.tryParse(activity['amount'].toString()) ?? 0.0;
             final amountStr = '+${amount.toStringAsFixed(0)} FCFA';
-            final isPending = activity['uuid'] != null; // Simili-logique offline
+            final statusStr = activity['status']?.toString().toLowerCase();
+            final isPending = statusStr == 'pending_merchant_validation' || 
+                              statusStr == 'pending_merchant_sync' || 
+                              statusStr == 'pending';
             
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -85,6 +89,9 @@ class MerchantActivityList extends StatelessWidget {
                 subtitle: _formatDate(activity['date'] ?? activity['created_at'] ?? DateTime.now().toIso8601String()),
                 amount: amountStr,
                 isPending: isPending,
+                onTap: () {
+                  TransactionDetailsBottomSheet.show(context, activity);
+                },
               ),
             );
           }),
@@ -98,8 +105,12 @@ class MerchantActivityList extends StatelessWidget {
     required String subtitle,
     required String amount,
     bool isPending = false,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -157,6 +168,7 @@ class MerchantActivityList extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

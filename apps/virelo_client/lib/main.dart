@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/pin_login_page.dart';
+import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
@@ -25,7 +26,6 @@ Future<void> main() async {
   runApp(const VireloApp());
 }
 
-
 class VireloApp extends StatefulWidget {
   const VireloApp({super.key});
 
@@ -35,18 +35,24 @@ class VireloApp extends StatefulWidget {
 
 class _VireloAppState extends State<VireloApp> {
   late final AuthService _authService;
-  late final Future<bool> _hasPinFuture;
+  late final Future<({bool hasSeenOnboarding, bool hasPin})> _initialStateFuture;
 
   @override
   void initState() {
     super.initState();
     final apiClient = ApiClient();
     _authService = AuthService(apiClient);
-    _hasPinFuture = _authService.hasLocalPin();
+    _initialStateFuture = _checkInitialState();
 
     final offlineStorage = OfflineStorageService(_authService);
     final offlineSync = OfflineSyncService(apiClient, offlineStorage);
     AutoSyncManager().initialize(offlineSync);
+  }
+
+  Future<({bool hasSeenOnboarding, bool hasPin})> _checkInitialState() async {
+    final hasSeenOnboarding = await _authService.hasSeenOnboarding();
+    final hasPin = await _authService.hasLocalPin();
+    return (hasSeenOnboarding: hasSeenOnboarding, hasPin: hasPin);
   }
 
   @override
@@ -62,16 +68,21 @@ class _VireloAppState extends State<VireloApp> {
         ),
         useMaterial3: true,
       ),
-      home: FutureBuilder<bool>(
-        future: _hasPinFuture,
+      home: FutureBuilder<({bool hasSeenOnboarding, bool hasPin})>(
+        future: _initialStateFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator(color: AppColors.accent)),
             );
           }
-          final hasPin = snapshot.data ?? false;
-          if (hasPin) {
+          final state = snapshot.data;
+          final hasSeenOnboarding = state?.hasSeenOnboarding ?? false;
+          final hasPin = state?.hasPin ?? false;
+
+          if (!hasSeenOnboarding) {
+            return const OnboardingPage();
+          } else if (hasPin) {
             return const PinLoginPage();
           } else {
             return const LoginPage();
