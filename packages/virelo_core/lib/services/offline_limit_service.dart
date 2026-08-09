@@ -3,27 +3,23 @@ import 'package:virelo_core/network/api_client.dart';
 class OfflineLimitInfo {
   final int kycLevel;
   final String kycLevelName;
-  final int trustScore;
   final bool isBanned;
   final double currentBalance;
   final double currentOfflineBalance;
   final double maxOfflineAmount;
   final double maxFixedAmount;
   final int maxPercentage;
-  final int minTrustScore;
   final double remainingAvailable;
 
   OfflineLimitInfo({
     required this.kycLevel,
     required this.kycLevelName,
-    required this.trustScore,
     required this.isBanned,
     required this.currentBalance,
     required this.currentOfflineBalance,
     required this.maxOfflineAmount,
     required this.maxFixedAmount,
     required this.maxPercentage,
-    required this.minTrustScore,
     required this.remainingAvailable,
   });
 
@@ -31,14 +27,12 @@ class OfflineLimitInfo {
     return OfflineLimitInfo(
       kycLevel: json['kyc_level'] as int? ?? 0,
       kycLevelName: json['kyc_level_name'] as String? ?? 'unknown',
-      trustScore: json['trust_score'] as int? ?? 0,
       isBanned: json['is_banned'] as bool? ?? false,
       currentBalance: (json['current_balance'] as num?)?.toDouble() ?? 0.0,
       currentOfflineBalance: (json['current_offline_balance'] as num?)?.toDouble() ?? 0.0,
       maxOfflineAmount: (json['max_offline_amount'] as num?)?.toDouble() ?? 0.0,
       maxFixedAmount: (json['max_fixed_amount'] as num?)?.toDouble() ?? 0.0,
       maxPercentage: json['max_percentage'] as int? ?? 0,
-      minTrustScore: json['min_trust_score'] as int? ?? 0,
       remainingAvailable: (json['remaining_available'] as num?)?.toDouble() ?? 0.0,
     );
   }
@@ -53,10 +47,7 @@ class OfflineLimitInfo {
     if (isBanned) {
       return 'Votre compte est banni. Contactez le support.';
     }
-    
-    if (trustScore < minTrustScore) {
-      return 'Score de confiance insuffisant. Minimum requis: $minTrustScore';
-    }
+
     
     if (kycLevel == 0) {
       return 'Complétez votre KYC pour accéder aux paiements hors ligne.';
@@ -68,7 +59,7 @@ class OfflineLimitInfo {
     
     if (amount > maxOfflineAmount) {
       final formattedMax = _formatAmount(maxOfflineAmount);
-      return 'Montant maximum autorisé: $formattedMax XOF pour votre niveau KYC ($kycLevelName).';
+      return 'Montant maximum autorisé: $formattedMax XOF ou $maxPercentage% de vos fonds.';
     }
     
     if (amount > remainingAvailable) {
@@ -103,14 +94,12 @@ class OfflineLimitService {
       return OfflineLimitInfo(
         kycLevel: 0,
         kycLevelName: 'error',
-        trustScore: 0,
         isBanned: false,
         currentBalance: 0,
         currentOfflineBalance: 0,
         maxOfflineAmount: 0,
         maxFixedAmount: 0,
         maxPercentage: 0,
-        minTrustScore: 0,
         remainingAvailable: 0,
       );
     }

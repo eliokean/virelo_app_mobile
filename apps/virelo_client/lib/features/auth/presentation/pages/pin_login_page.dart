@@ -97,40 +97,51 @@ class _PinLoginPageState extends State<PinLoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            const Spacer(flex: 2),
-            Text(
-              'Déverrouiller Virelo',
-              style: AppTextStyles.headlineLarge,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Saisissez votre code PIN',
-              style: AppTextStyles.bodyMedium,
-            ),
-            const Spacer(flex: 2),
-            
-            VireloPinDots(pinLength: _pin.length),
-            
-            const SizedBox(height: AppSpacing.md),
-            TextButton(
-              onPressed: _logoutAndSwitchUser,
-              child: Text(
-                'Oublié ? Se déconnecter',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.accent),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      const Spacer(flex: 2),
+                      Text(
+                        'Déverrouiller Virelo',
+                        style: AppTextStyles.headlineLarge,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Saisissez votre code PIN',
+                        style: AppTextStyles.bodyMedium,
+                      ),
+                      const Spacer(flex: 2),
+                      
+                      VireloPinDots(pinLength: _pin.length),
+                      
+                      const SizedBox(height: AppSpacing.md),
+                      TextButton(
+                        onPressed: _logoutAndSwitchUser,
+                        child: Text(
+                          'Oublié ? Se déconnecter',
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.accent),
+                        ),
+                      ),
+                      
+                      const Spacer(flex: 3),
+                      VireloPinPad(
+                        onDigitTap: _onDigitTap,
+                        onDeleteTap: _onDeleteTap,
+                        showBiometric: _biometricsAvailable,
+                        onBiometricTap: _handleBiometrics,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            
-            const Spacer(flex: 3),
-            VireloPinPad(
-              onDigitTap: _onDigitTap,
-              onDeleteTap: _onDeleteTap,
-              showBiometric: _biometricsAvailable,
-              onBiometricTap: _handleBiometrics,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
+            );
+          }
         ),
       ),
     );

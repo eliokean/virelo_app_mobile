@@ -5,6 +5,9 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_text_field.dart';
 import 'package:virelo_design_system/widgets/virelo_primary_button.dart';
+import 'package:provider/provider.dart';
+import 'package:virelo_core/services/auth_service.dart';
+import 'reset_pin_page.dart';
 
 class ForgotPinPage extends StatefulWidget {
   final String? initialPhone;
@@ -30,22 +33,41 @@ class _ForgotPinPageState extends State<ForgotPinPage> {
     super.dispose();
   }
 
-  void _handleSend() {
+  void _handleSend() async {
     if (_phoneController.text.trim().isEmpty) return;
 
     setState(() {
       _isSent = true;
     });
 
-    // Simuler l'envoi d'un SMS ou appel API
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      final authService = context.read<AuthService>();
+      await authService.forgotPin(_phoneController.text.trim());
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Un code de réinitialisation a été envoyé (simulation)')),
+          const SnackBar(content: Text('Un code de réinitialisation a été envoyé')),
         );
-        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResetPinPage(phone: _phoneController.text.trim()),
+          ),
+        );
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSent = false;
+        });
+      }
+    }
   }
 
   @override

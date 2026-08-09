@@ -8,6 +8,7 @@ import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'transfer_amount_page.dart';
 import 'scan_contact_page.dart';
+import 'package:provider/provider.dart';
 import 'package:virelo_core/services/wallet_service.dart';
 
 class TransferContactPage extends StatefulWidget {
@@ -34,7 +35,8 @@ class _TransferContactPageState extends State<TransferContactPage> {
     if (!mounted) return;
     setState(() => _isLoadingRecents = true);
     try {
-      final response = await WalletService().getHistory();
+      final walletService = context.read<WalletService>();
+      final response = await walletService.getHistory();
       if (response['data'] != null) {
         final List data = response['data'];
         final recents = <Map<String, dynamic>>[];

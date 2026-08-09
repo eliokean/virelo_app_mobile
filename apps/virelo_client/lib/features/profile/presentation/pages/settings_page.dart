@@ -9,7 +9,7 @@ import 'package:virelo_core/services/auth_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../kyc/presentation/pages/kyc_upload_page.dart';
 import '../../../wallet/presentation/pages/offline_sync_queue_page.dart';
-import '../../../core/services/push_notification_service.dart';
+import 'package:virelo_client/core/services/push_notification_service.dart';
 import 'package:intl/intl.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -49,7 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _fetchKycStatus() async {
     try {
-      final response = await ApiClient().dio.get('/kyc/status');
+      final response = await ApiClient().dio.get('/auth/kyc/status');
       if (mounted) {
         setState(() {
           _kycStatus = response.data['status'] ?? 'unverified';

@@ -6,6 +6,7 @@ import '../constants/app_spacing.dart';
 class VireloTextField extends StatelessWidget {
   final String        hint;
   final IconData?     prefixIcon;
+  final Widget?       suffixIcon;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
   final String?       Function(String?)? validator;
@@ -16,6 +17,7 @@ class VireloTextField extends StatelessWidget {
     super.key,
     required this.hint,
     this.prefixIcon,
+    this.suffixIcon,
     this.controller,
     this.keyboardType,
     this.validator,
@@ -40,6 +42,7 @@ class VireloTextField extends StatelessWidget {
         prefixIcon: prefixIcon != null
           ? Icon(prefixIcon, size: 18, color: AppColors.textTertiary)
           : null,
+        suffixIcon: suffixIcon,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,

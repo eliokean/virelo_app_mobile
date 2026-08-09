@@ -64,7 +64,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
         );
       }
 
-      await ApiClient().dio.post('/kyc/upload', data: formData);
+      await ApiClient().dio.post('/auth/kyc/upload', data: formData);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

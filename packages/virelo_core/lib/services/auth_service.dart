@@ -206,6 +206,36 @@ class AuthService {
     }
   }
 
+  Future<void> forgotPin(String phone) async {
+    try {
+      await _apiClient.dio.post(
+        ApiConstants.forgotPin,
+        data: {'phone': phone},
+      );
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
+      throw Exception(msg ?? 'Erreur lors de la demande de réinitialisation');
+    }
+  }
+
+  Future<void> resetPin(String phone, String otp, String newPin) async {
+    try {
+      await _apiClient.dio.post(
+        ApiConstants.resetPin,
+        data: {
+          'phone': phone,
+          'otp': otp,
+          'new_pin': newPin,
+        },
+      );
+      // Automatically save the new PIN locally if we just reset it
+      await saveLocalPin(newPin);
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
+      throw Exception(msg ?? 'Code OTP invalide ou expiré');
+    }
+  }
+
   Future<String?> getUserId() async {
     return await _secureStorage.read(key: 'user_id');
   }

@@ -15,6 +15,8 @@ class ApiConstants {
   static const String register = '/auth/register';
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
+  static const String forgotPin = '/auth/forgot-pin';
+  static const String resetPin = '/auth/reset-pin';
   
   // Transactions
   static const String processOffline = '/transactions/process-offline';
