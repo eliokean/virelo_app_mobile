@@ -8,7 +8,7 @@ import 'package:virelo_core/services/auth_service.dart';
 import '../../../wallet/presentation/pages/wallet_page.dart';
 import 'device_verification_page.dart';
 import 'forgot_pin_page.dart';
-import 'package:virelo_client/core/services/push_notification_service.dart';
+import 'package:virelo_core/virelo_core.dart';
 
 class LoginNetworkPinPage extends StatefulWidget {
   final String phone;

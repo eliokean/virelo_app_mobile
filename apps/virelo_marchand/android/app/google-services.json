@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "153356030119",
+    "project_id": "virelo-f71ed",
+    "storage_bucket": "virelo-f71ed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:153356030119:android:406b286bc0103e7e85cb82",
+        "android_client_info": {
+          "package_name": "com.virelo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBilvqbvHkb7WFQAn7161OoGx6YaDxNpOU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:153356030119:android:5cf9961ece773e1f85cb82",
+        "android_client_info": {
+          "package_name": "com.virelo.marchand.virelo_marchand"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBilvqbvHkb7WFQAn7161OoGx6YaDxNpOU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

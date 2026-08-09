@@ -5,6 +5,7 @@ import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_pin_pad.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/virelo_core.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/routes/route_names.dart';
 
@@ -57,6 +58,9 @@ class _LoginNetworkPinPageState extends State<LoginNetworkPinPage> {
       // Sauvegarde du PIN en local
       await _authService.saveLocalPin(_pin);
       
+      // Envoi du token FCM
+      await PushNotificationService().sendTokenToBackend();
+
       if (mounted) {
         // Redirection vers le Dashboard avec go_router
         context.goNamed(RouteNames.dashboard);

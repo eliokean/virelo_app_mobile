@@ -13,7 +13,7 @@ import 'core/services/auto_sync_manager.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'core/services/push_notification_service.dart';
+import 'package:virelo_core/virelo_core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

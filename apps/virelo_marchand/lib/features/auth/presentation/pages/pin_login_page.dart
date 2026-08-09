@@ -6,6 +6,7 @@ import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_pin_pad.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/virelo_core.dart';
 import '../../../../config/routes/route_names.dart';
 
 class PinLoginPage extends StatefulWidget {
@@ -40,6 +41,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
   Future<void> _handleBiometrics() async {
     final success = await _authService.authenticateWithBiometrics();
     if (success && mounted) {
+      PushNotificationService().sendTokenToBackend();
       _navigateToDashboard();
     }
   }
@@ -77,6 +79,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
   }
 
   void _navigateToDashboard() {
+    PushNotificationService().sendTokenToBackend();
     context.goNamed(RouteNames.dashboard);
   }
 

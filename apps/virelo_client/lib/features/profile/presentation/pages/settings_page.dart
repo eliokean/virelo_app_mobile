@@ -9,7 +9,7 @@ import 'package:virelo_core/services/auth_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../kyc/presentation/pages/kyc_upload_page.dart';
 import '../../../wallet/presentation/pages/offline_sync_queue_page.dart';
-import 'package:virelo_client/core/services/push_notification_service.dart';
+import 'package:virelo_core/virelo_core.dart';
 import 'package:intl/intl.dart';
 
 class SettingsPage extends StatefulWidget {
