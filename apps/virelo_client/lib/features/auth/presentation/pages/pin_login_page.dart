@@ -7,6 +7,7 @@ import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import '../../../wallet/presentation/pages/wallet_page.dart';
 import 'login_page.dart';
+import 'package:virelo_client/core/services/push_notification_service.dart';
 
 class PinLoginPage extends StatefulWidget {
   const PinLoginPage({super.key});
@@ -77,6 +78,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
   }
 
   void _navigateToWallet() {
+    PushNotificationService().sendTokenToBackend();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const WalletPage()),
     );

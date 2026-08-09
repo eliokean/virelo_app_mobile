@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:uuid/uuid.dart';
+
 import 'package:cryptography/cryptography.dart';
 import '../offline_sync/offline_authorization_payload.dart';
 import '../offline_sync/offline_storage_service.dart';
@@ -40,7 +40,12 @@ class OfflineCryptoService {
     final timestamp = now.toIso8601String();
     final validUntil = now.add(const Duration(seconds: 90)).toIso8601String();
     final publicKeyBase64 = await getPublicKey() ?? '';
-    final payloadUuid = const Uuid().v4();
+    
+    // Génère une référence lisible type VIR-OFF-XXXXX au lieu d'un long UUID
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final randomStr = String.fromCharCodes(Iterable.generate(
+        8, (_) => chars.codeUnitAt(DateTime.now().microsecondsSinceEpoch % chars.length))); // Fallback basique
+    final payloadUuid = 'VIR-OFF-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}$randomStr';
 
     // On prépare le payload sans la signature
     final payloadWithoutSig = OfflineAuthorizationPayload(

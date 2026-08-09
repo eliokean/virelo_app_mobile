@@ -8,6 +8,7 @@ import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'transfer_amount_page.dart';
 import 'scan_contact_page.dart';
+import 'package:virelo_core/services/wallet_service.dart';
 
 class TransferContactPage extends StatefulWidget {
   const TransferContactPage({super.key});
@@ -20,6 +21,52 @@ class _TransferContactPageState extends State<TransferContactPage> {
   List<Contact> _contacts = [];
   bool _isLoadingContacts = false;
   final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _recentContacts = [];
+  bool _isLoadingRecents = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecentContacts();
+  }
+
+  Future<void> _fetchRecentContacts() async {
+    if (!mounted) return;
+    setState(() => _isLoadingRecents = true);
+    try {
+      final response = await WalletService().getHistory();
+      if (response['data'] != null) {
+        final List data = response['data'];
+        final recents = <Map<String, dynamic>>[];
+        final phones = <String>{};
+        
+        for (var tx in data) {
+          if (tx['type'] == 'c2c_transfer' && tx['is_negative'] == true && tx['phone'] != null) {
+            final phone = tx['phone'] as String;
+            if (!phones.contains(phone)) {
+              phones.add(phone);
+              recents.add({
+                'name': tx['title'] ?? 'Inconnu',
+                'phone': phone,
+                'color': [0xFFD8B4E2, 0xFFF9C846, 0xFF76C893, 0xFF83C5BE, 0xFFE29578][recents.length % 5],
+              });
+            }
+          }
+        }
+        if (mounted) {
+          setState(() {
+            _recentContacts = recents.take(10).toList();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching recent contacts: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingRecents = false);
+      }
+    }
+  }
 
   Future<void> _fetchContacts() async {
     setState(() => _isLoadingContacts = true);
@@ -346,11 +393,11 @@ class _TransferContactPageState extends State<TransferContactPage> {
   }
 
   Widget _buildRecentContacts() {
-    final recents = [
-      {'name': 'Samantha Jones', 'phone': '07 69 30 37 18', 'color': 0xFFD8B4E2},
-      {'name': 'Bro 🤟', 'phone': '05 95 71 07 84', 'color': 0xFFF9C846},
-      {'name': 'Loukou L T E K', 'phone': '05 54 06 41 56', 'color': 0xFF76C893},
-    ];
+    if (_isLoadingRecents) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFB5E48C)));
+    }
+
+    final recents = _recentContacts;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,7 +428,14 @@ class _TransferContactPageState extends State<TransferContactPage> {
         ),
         const SizedBox(height: AppSpacing.md),
         Expanded(
-          child: ListView.builder(
+          child: recents.isEmpty
+            ? Center(
+                child: Text(
+                  'Aucun contact récent',
+                  style: AppTextStyles.bodyMedium.copyWith(color: const Color(0xFF8B93A8)),
+                ),
+              )
+            : ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
             itemCount: recents.length,
             itemBuilder: (context, index) {

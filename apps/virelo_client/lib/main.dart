@@ -12,8 +12,13 @@ import 'core/services/auto_sync_manager.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'core/services/push_notification_service.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await PushNotificationService().init();
 
   // Initialisation de Hive (Approche Hybride de Grade Entreprise)
   await HiveManager.openOfflineBox();

@@ -9,6 +9,8 @@ import 'package:virelo_core/services/auth_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../kyc/presentation/pages/kyc_upload_page.dart';
 import '../../../wallet/presentation/pages/offline_sync_queue_page.dart';
+import '../../../core/services/push_notification_service.dart';
+import 'package:intl/intl.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -29,6 +31,10 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _biometricsAvailable = false;
   bool _isLoading = false;
 
+  String _kycStatus = 'unverified';
+  List<dynamic> _notifications = [];
+  bool _isLoadingNotifications = true;
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +43,33 @@ class _SettingsPageState extends State<SettingsPage> {
 
     _loadUserData();
     _checkBiometrics();
+    _fetchKycStatus();
+    _fetchNotifications();
+  }
+
+  Future<void> _fetchKycStatus() async {
+    try {
+      final response = await ApiClient().dio.get('/kyc/status');
+      if (mounted) {
+        setState(() {
+          _kycStatus = response.data['status'] ?? 'unverified';
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _fetchNotifications() async {
+    try {
+      final response = await ApiClient().dio.get('/notifications');
+      if (mounted) {
+        setState(() {
+          _notifications = response.data;
+          _isLoadingNotifications = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingNotifications = false);
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -102,26 +135,35 @@ class _SettingsPageState extends State<SettingsPage> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _buildNotificationTile(
-                  icon: LucideIcons.shieldCheck,
-                  title: 'Sécurité de votre compte',
-                  description: 'Votre session est active et sécurisée.',
-                  time: 'Il y a 5 min',
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _buildNotificationTile(
-                  icon: LucideIcons.wallet,
-                  title: 'Solde mis à jour',
-                  description: 'Votre portefeuille a été synchronisé.',
-                  time: 'Aujourd\'hui',
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _buildNotificationTile(
-                  icon: LucideIcons.wifi,
-                  title: 'Transactions hors ligne prêtes',
-                  description: 'Le protocole NFC/QR offline est opérationnel.',
-                  time: 'Hier',
-                ),
+                if (_isLoadingNotifications)
+                  const Center(child: CircularProgressIndicator(color: Color(0xFF161A22)))
+                else if (_notifications.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text(
+                        'Aucune notification',
+                        style: AppTextStyles.bodyMedium.copyWith(color: const Color(0xFF8B93A8)),
+                      ),
+                    ),
+                  )
+                else
+                  ..._notifications.take(5).map((notif) {
+                    final date = DateTime.tryParse(notif['created_at'].toString());
+                    final formattedDate = date != null ? DateFormat('dd/MM HH:mm').format(date) : '';
+                    
+                    return Column(
+                      children: [
+                        _buildNotificationTile(
+                          icon: notif['icon'] == 'wallet' ? LucideIcons.wallet : (notif['icon'] == 'arrow-down-left' ? LucideIcons.arrowDownLeft : LucideIcons.bell),
+                          title: notif['title'] ?? '',
+                          description: notif['description'] ?? '',
+                          time: formattedDate,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
+                    );
+                  }),
                 const SizedBox(height: AppSpacing.lg),
               ],
             ),
@@ -298,13 +340,13 @@ class _SettingsPageState extends State<SettingsPage> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE8F5E9),
+                                color: _kycStatus == 'approved' ? const Color(0xFFE8F5E9) : (_kycStatus == 'pending' ? Colors.orange.shade50 : Colors.grey.shade100),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'Vérifier',
+                                _kycStatus == 'approved' ? 'Vérifié' : (_kycStatus == 'pending' ? 'En attente' : (_kycStatus == 'rejected' ? 'Rejeté' : 'Vérifier')),
                                 style: AppTextStyles.labelSmall.copyWith(
-                                  color: const Color(0xFF2E7D32),
+                                  color: _kycStatus == 'approved' ? const Color(0xFF2E7D32) : (_kycStatus == 'pending' ? Colors.orange.shade800 : Colors.grey.shade700),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -345,6 +387,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         onChanged: (val) async {
                           setState(() => _pushNotifications = val);
                           await _storage.write(key: 'setting_push_notif', value: val.toString());
+                          if (val) {
+                            await PushNotificationService().sendTokenToBackend();
+                          } else {
+                            await PushNotificationService().removeToken();
+                          }
                         },
                       ),
                       const Divider(height: 1, indent: 56, color: Color(0xFFF0F0F0)),
