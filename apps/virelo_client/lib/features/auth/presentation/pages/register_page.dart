@@ -30,21 +30,22 @@ class _RegisterPageState extends State<RegisterPage> {
   void _handleContinue() {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
-    final email = _emailController.text.trim();
 
-    if (name.isEmpty || phone.isEmpty || email.isEmpty) {
+    if (name.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez remplir tous les champs')),
       );
       return;
     }
 
+    final autoEmail = '${phone.replaceAll('+', '').replaceAll(' ', '')}@virelo.app';
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RegisterPinPage(
           name: name,
           phone: phone,
-          email: email,
+          email: autoEmail,
         ),
       ),
     );
@@ -89,13 +90,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 hint: 'Numéro de téléphone',
                 prefixIcon: LucideIcons.phone,
                 keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              VireloTextField(
-                controller: _emailController,
-                hint: 'Adresse e-mail',
-                prefixIcon: LucideIcons.mail,
-                keyboardType: TextInputType.emailAddress,
               ),
               
               const SizedBox(height: 48),

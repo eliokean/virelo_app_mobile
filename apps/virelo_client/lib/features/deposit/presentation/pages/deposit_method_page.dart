@@ -202,36 +202,6 @@ class _DepositMethodPageState extends State<DepositMethodPage> {
                               id: 'moov',
                               title: 'Moov Money',
                               subtitle: 'Transaction instantanée',
-                              logoPath: 'assets/gateway/moov.png',
-                            ),
-                            
-                            const SizedBox(height: AppSpacing.md),
-                            // Add Method
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.lg),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: const Color(0xFFC2CAB0),
-                                  style: BorderStyle.solid, // Flutter doesn't have dashed border easily without package, using solid light green
-                                  width: 2,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(LucideIcons.plusCircle, color: Color(0xFF4A5168)),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(
-                                    'Ajouter une méthode',
-                                    style: AppTextStyles.labelLarge.copyWith(
-                                      color: const Color(0xFF4A5168),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
-                                ],
-                              ),
                             ),
                           ],
                         ),
@@ -281,20 +251,37 @@ class _DepositMethodPageState extends State<DepositMethodPage> {
                                       try {
                                         final apiClient = ApiClient();
                                         final walletService = WalletService(apiClient, AuthService(apiClient));
-                                        await walletService.topUp(double.parse(widget.amount), _selectedMethod);
+                                        final resultData = await walletService.topUp(double.parse(widget.amount), _selectedMethod);
+                                         
+                                         final methodInfo = {
+                                           'wave': {'title': 'Wave', 'logo': 'assets/gateway/wave.svg'},
+                                           'orange': {'title': 'Orange Money', 'logo': 'assets/gateway/orange.svg'},
+                                           'mtn': {'title': 'MTN Mobile Money', 'logo': 'assets/gateway/mtn.svg'},
+                                           'moov': {'title': 'Moov Money', 'logo': 'assets/gateway/moov.png'},
+                                         }[_selectedMethod] ?? {'title': 'Wave', 'logo': 'assets/gateway/wave.svg'};
 
-                                        if (context.mounted) {
-                                          setState(() {
-                                            _isLoading = false;
-                                          });
-                                          await Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => DepositSuccessPage(amount: _formattedAmount),
-                                            ),
-                                          );
-                                          if (context.mounted) Navigator.pop(context, true); // Pop and refresh
-                                        }
+                                         final refCode = (resultData is Map && resultData['transaction'] != null && resultData['transaction']['reference'] != null)
+                                             ? resultData['transaction']['reference'].toString()
+                                             : 'VIR-RECH-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+
+                                         if (context.mounted) {
+                                           setState(() {
+                                             _isLoading = false;
+                                           });
+                                           await Navigator.push(
+                                             context,
+                                             MaterialPageRoute(
+                                               builder: (_) => DepositSuccessPage(
+                                                 amount: _formattedAmount,
+                                                 methodId: _selectedMethod,
+                                                 methodTitle: methodInfo['title']!,
+                                                 methodLogoPath: methodInfo['logo']!,
+                                                 reference: refCode,
+                                               ),
+                                             ),
+                                           );
+                                           if (context.mounted) Navigator.pop(context, true); // Pop and refresh
+                                         }
                                       } catch (e) {
                                         if (context.mounted) {
                                           setState(() {

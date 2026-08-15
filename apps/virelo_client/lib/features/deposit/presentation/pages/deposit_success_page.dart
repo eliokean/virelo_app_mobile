@@ -4,10 +4,30 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
+import 'package:virelo_design_system/widgets/transaction_details_bottom_sheet.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 
 class DepositSuccessPage extends StatelessWidget {
   final String amount;
-  const DepositSuccessPage({super.key, required this.amount});
+  final String methodId;
+  final String methodTitle;
+  final String methodLogoPath;
+  final String reference;
+
+  const DepositSuccessPage({
+    super.key,
+    required this.amount,
+    this.methodId = 'wave',
+    this.methodTitle = 'Wave',
+    this.methodLogoPath = 'assets/gateway/wave.svg',
+    this.reference = '#DW-98234-LX',
+  });
+
+  String get _currentFormattedDate {
+    final now = DateTime.now();
+    return "Aujourd'hui, ${DateFormat('HH:mm').format(now)}";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,11 +125,11 @@ class DepositSuccessPage extends StatelessWidget {
                               ),
                               child: Column(
                                 children: [
-                                  _buildDetailRow('Date', 'Aujourd\'hui, 14:20'),
+                                  _buildDetailRow('Date', _currentFormattedDate),
                                   const SizedBox(height: AppSpacing.lg),
-                                  _buildMethodRow('Méthode', 'Wave', LucideIcons.waves),
+                                  _buildMethodRow('Méthode', methodTitle, methodLogoPath),
                                   const SizedBox(height: AppSpacing.lg),
-                                  _buildDetailRow('ID Transaction', '#DW-98234-LX'),
+                                  _buildDetailRow('ID Transaction', reference),
                                   const Padding(
                                     padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                                     child: Divider(color: Color(0xFFE2E2E3), height: 1),
@@ -174,7 +194,17 @@ class DepositSuccessPage extends StatelessWidget {
                               width: double.infinity,
                               height: 60,
                               child: TextButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  TransactionDetailsBottomSheet.show(context, {
+                                    'title': 'Rechargement $methodTitle',
+                                    'amount': amount.replaceAll(' ', ''),
+                                    'is_negative': false,
+                                    'status': 'completed',
+                                    'reference': reference,
+                                    'type': 'recharge',
+                                    'date': DateTime.now().toIso8601String(),
+                                  });
+                                },
                                 style: TextButton.styleFrom(
                                   backgroundColor: const Color(0xFFEEEEEF),
                                   shape: RoundedRectangleBorder(
@@ -214,15 +244,27 @@ class DepositSuccessPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMethodRow(String label, String method, IconData icon) {
+  Widget _buildMethodRow(String label, String method, String logoPath) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF8B93A8))),
         Row(
           children: [
-            Icon(icon, size: 16, color: AppColors.accent),
-            const SizedBox(width: 4),
+            Container(
+              width: 24,
+              height: 24,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFE5E5EA)),
+              ),
+              child: logoPath.endsWith('.svg')
+                  ? SvgPicture.asset(logoPath, fit: BoxFit.contain)
+                  : Image.asset(logoPath, fit: BoxFit.contain),
+            ),
+            const SizedBox(width: 8),
             Text(method, style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF1A1C1D), fontWeight: FontWeight.w600)),
           ],
         ),
@@ -262,9 +304,6 @@ class DepositSuccessPage extends StatelessWidget {
             ),
           ),
         );
-      },
-      onEnd: () {
-        // Optional: loop animation with a stateful widget, for now just a simple scale-in.
       },
     );
   }
