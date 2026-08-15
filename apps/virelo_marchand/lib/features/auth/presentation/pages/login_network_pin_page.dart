@@ -58,8 +58,8 @@ class _LoginNetworkPinPageState extends State<LoginNetworkPinPage> {
       // Sauvegarde du PIN en local
       await _authService.saveLocalPin(_pin);
       
-      // Envoi du token FCM
-      await PushNotificationService().sendTokenToBackend();
+      // Envoi du token FCM en arrière-plan sans bloquer
+      PushNotificationService().sendTokenToBackend();
 
       if (mounted) {
         // Redirection vers le Dashboard avec go_router
