@@ -202,6 +202,7 @@ class _DepositMethodPageState extends State<DepositMethodPage> {
                               id: 'moov',
                               title: 'Moov Money',
                               subtitle: 'Transaction instantanée',
+                              logoPath: 'assets/gateway/moov.png',
                             ),
                           ],
                         ),
