@@ -56,16 +56,16 @@ class _HistoryPageState extends State<HistoryPage> {
 
     // 2. Tenter de récupérer les données à jour depuis le serveur
     try {
-      final offlineTx = await _offlineStorage.getOfflineTransactions();
       final res = await _walletService.getHistory(page: 1, perPage: _perPage);
       final List<dynamic> serverData = (res['data'] as List<dynamic>?) ?? [];
       final bool hasMoreServer = res['has_more'] == true;
 
-      // Sauvegarder dans le cache local
+      // Sauvegarder dans le cache local et nettoyer les transactions hors-ligne synchronisées
       if (serverData.isNotEmpty) {
         await _offlineStorage.saveCachedServerTransactions(serverData);
       }
 
+      final offlineTx = await _offlineStorage.getOfflineTransactions();
       final combined = <dynamic>[...offlineTx, ...serverData];
 
       if (mounted) {
@@ -355,11 +355,14 @@ class _HistoryPageState extends State<HistoryPage> {
                                       NumberFormat('#,###', 'fr_FR').format(amountNum).replaceAll(',', ' ');
                                   final amountStr = '${isNegative ? '-' : '+'}$formattedAmount FCFA';
 
-                                  final isPending = activity['uuid'] != null ||
-                                      activity['status'] == 'pending_merchant_validation';
-                                  final subtitleText = isPending &&
-                                          activity['status'] == 'pending_merchant_validation'
-                                      ? 'En attente du marchand'
+                                  final statusStr = activity['status']?.toString().toLowerCase();
+                                  final isPending = statusStr == 'pending_merchant_validation' || 
+                                                    statusStr == 'pending_merchant_sync' || 
+                                                    statusStr == 'pending';
+                                  final subtitleText = isPending
+                                      ? (statusStr == 'pending_merchant_validation' 
+                                          ? 'En attente du marchand' 
+                                          : 'En attente de synchro')
                                       : (activity['subtitle'] ??
                                           _formatTime(activity['date'] ?? activity['timestamp']));
 

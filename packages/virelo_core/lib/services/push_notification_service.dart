@@ -40,7 +40,7 @@ class PushNotificationService {
     }
 
     // Initialize local notifications for foreground display
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_notification');
     const InitializationSettings initSettings = InitializationSettings(android: androidSettings);
     await _localNotificationsPlugin.initialize(
       settings: initSettings,
