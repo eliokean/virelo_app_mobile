@@ -9,3 +9,4 @@ export 'widgets/virelo_badge.dart';
 export 'widgets/virelo_pin_pad.dart';
 export 'widgets/virelo_primary_button.dart';
 export 'widgets/virelo_text_field.dart';
+export 'widgets/virelo_alert_dialog.dart';

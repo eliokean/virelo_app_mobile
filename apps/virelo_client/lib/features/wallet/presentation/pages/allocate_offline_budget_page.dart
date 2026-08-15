@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:virelo_design_system/theme/app_text_styles.dart';
-import 'package:virelo_design_system/theme/app_colors.dart';
-import 'package:virelo_design_system/constants/app_spacing.dart';
+import 'package:virelo_design_system/virelo_design_system.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
@@ -65,24 +63,54 @@ class _AllocateOfflineBudgetPageState extends State<AllocateOfflineBudgetPage> {
       
       if (mounted) {
         setState(() => _isAllocating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Budget alloué avec succès !')),
+        showDialog(
+          context: context,
+          builder: (context) => VireloAlertDialog(
+            alertType: VireloAlertType.success,
+            title: 'Allocation Réussie !',
+            message: 'Votre budget de $_amount FCFA a été sécurisé en mode hors-ligne avec succès.',
+            primaryButtonLabel: 'Super',
+            onPrimaryPressed: () => Navigator.pop(context, true),
+          ),
         );
-        Navigator.pop(context, true);
       }
     } on DioException catch (e) {
       if (mounted) {
         setState(() => _isAllocating = false);
-        final errorMsg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() ?? 'Erreur lors de l\'allocation' : 'Erreur lors de l\'allocation';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
-        );
+        final responseData = e.response?.data;
+        final errorMsg = responseData is Map ? responseData['message']?.toString() ?? 'Erreur lors de l\'allocation' : 'Erreur lors de l\'allocation';
+        
+        if (errorMsg.contains('KYC') || errorMsg.contains('0%') || errorMsg.contains('vérification')) {
+          VireloAlertDialog.showKycRequired(
+            context,
+            message: errorMsg,
+          );
+        } else if (errorMsg.contains('50%') || errorMsg.contains('limite') || errorMsg.contains('insuffisant')) {
+          VireloAlertDialog.showLimitExceeded(
+            context,
+            message: errorMsg,
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (context) => VireloAlertDialog(
+              alertType: VireloAlertType.error,
+              title: 'Erreur d\'allocation',
+              message: errorMsg,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isAllocating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur inconnue'), backgroundColor: Colors.red),
+        showDialog(
+          context: context,
+          builder: (context) => const VireloAlertDialog(
+            alertType: VireloAlertType.error,
+            title: 'Erreur Inattendue',
+            message: 'Une erreur est survenue. Veuillez réessayer ultérieurement.',
+          ),
         );
       }
     }
