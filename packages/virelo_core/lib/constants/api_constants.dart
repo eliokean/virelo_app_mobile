@@ -7,7 +7,7 @@ class ApiConstants {
     'API_BASE_URL',
     defaultValue: String.fromEnvironment(
       'NGROK_URL',
-      defaultValue: 'https://stimulate-bladder-hurry.ngrok-free.dev',
+      defaultValue: 'https://backend-virelo.onrender.com',
     ),
   );
 
