@@ -27,31 +27,38 @@ class _ScanInvoicePageState extends State<ScanInvoicePage> {
         setState(() => _isProcessing = true);
 
         try {
-          // Decode JSON invoice from merchant
-          final invoiceData = jsonDecode(code);
-          
-          if (invoiceData['type'] == 'invoice') {
-            final String merchantId = invoiceData['merchantId'];
-            final String merchantName = invoiceData['merchantName'];
-            final double amount = (invoiceData['amount'] as num).toDouble();
+          String merchantId = '1';
+          String merchantName = 'Marchand';
+          double amount = 0.0;
 
-            // Arrêter la caméra et passer à la page du PIN
-            cameraController.stop();
-            
-            if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => GeneratePaymentQrPinPage(
-                    amount: amount,
-                    merchantId: merchantId,
-                    merchantName: merchantName,
-                  ),
-                ),
-              );
-            }
+          if (code.contains('/pay?') || code.startsWith('http')) {
+            final uri = Uri.parse(code);
+            merchantId = uri.queryParameters['m'] ?? '1';
+            merchantName = Uri.decodeComponent(uri.queryParameters['n'] ?? 'Marchand');
+            amount = double.tryParse(uri.queryParameters['a'] ?? '0') ?? 0.0;
           } else {
-            throw Exception("Type de QR Code invalide");
+            final invoiceData = jsonDecode(code);
+            merchantId = invoiceData['merchantId']?.toString() ?? '1';
+            merchantName = invoiceData['merchantName']?.toString() ?? 'Marchand';
+            amount = (invoiceData['amount'] as num).toDouble();
+          }
+
+          if (amount <= 0) throw Exception("Montant de facture invalide");
+
+          // Arrêter la caméra et passer à la page du PIN
+          cameraController.stop();
+          
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GeneratePaymentQrPinPage(
+                  amount: amount,
+                  merchantId: merchantId,
+                  merchantName: merchantName,
+                ),
+              ),
+            );
           }
         } catch (e) {
           if (mounted) {
