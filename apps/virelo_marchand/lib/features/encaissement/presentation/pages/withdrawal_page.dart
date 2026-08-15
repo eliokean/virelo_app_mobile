@@ -26,15 +26,16 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   final TextEditingController _accountController = TextEditingController();
   final ApiClient _apiClient = ApiClient();
   
-  String _selectedProvider = 'orange_money';
+  String _selectedProvider = 'wave';
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
 
   final List<Map<String, String>> _providers = [
+    {'id': 'wave', 'name': 'Wave'},
     {'id': 'orange_money', 'name': 'Orange Money'},
     {'id': 'mtn', 'name': 'MTN Mobile Money'},
-    {'id': 'bank', 'name': 'Virement Bancaire'},
+    {'id': 'moov', 'name': 'Moov Money'},
   ];
 
   Future<void> _initiateWithdrawal() async {
@@ -161,6 +162,13 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
             ),
             const SizedBox(height: AppSpacing.sm),
             _buildMethodTile(
+              id: 'wave',
+              title: 'Wave',
+              subtitle: 'Retrait instantané',
+              logoPath: 'assets/gateway/wave.svg',
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _buildMethodTile(
               id: 'orange_money',
               title: 'Orange Money',
               subtitle: 'Retrait instantané',
@@ -175,10 +183,10 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
             ),
             const SizedBox(height: AppSpacing.sm),
             _buildMethodTile(
-              id: 'bank',
-              title: 'Virement Bancaire',
-              subtitle: '24h à 48h ouvrées',
-              icon: LucideIcons.building,
+              id: 'moov',
+              title: 'Moov Money',
+              subtitle: 'Retrait instantané',
+              logoPath: 'assets/gateway/moov.png',
             ),
             const SizedBox(height: AppSpacing.md),
 

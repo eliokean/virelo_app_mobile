@@ -266,45 +266,41 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
   Widget _buildActionButton({
     required String label,
     required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
     required VoidCallback onTap,
   }) {
     return Material(
-      color: const Color(0xFF2D2E33),
-      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      color: const Color(0xFF2C3138),
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           height: 72,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    style: AppTextStyles.button.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
+                  color: iconBgColor,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    width: 1,
-                  ),
                 ),
                 child: Icon(
                   icon,
-                  size: 14,
+                  size: 20,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                label,
+                style: AppTextStyles.button.copyWith(
                   color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -361,7 +357,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
               ),
             ],
 
-            // Barre d'actions factorisée : Encaisser + Retirer (Avec picto conforme à la charte client)
+            // Barre d'actions factorisée : Encaisser + Retirer (Haute affordance)
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenH,
@@ -369,21 +365,25 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
               ),
               child: Row(
                 children: [
-                  // Action 1: ENCAISSER (Factorisé : QR + NFC)
+                  // Action 1: ENCAISSER
                   Expanded(
                     child: _buildActionButton(
                       label: 'Encaisser',
-                      icon: LucideIcons.arrowDownLeft,
+                      icon: LucideIcons.qrCode,
+                      iconColor: const Color(0xFF161A22),
+                      iconBgColor: AppColors.accent,
                       onTap: () => _showCollectOptions(context),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
 
-                  // Action 2: RETIRER (Déplacé dans la zone d'action)
+                  // Action 2: RETIRER
                   Expanded(
                     child: _buildActionButton(
                       label: 'Retirer',
                       icon: LucideIcons.arrowUpRight,
+                      iconColor: Colors.white,
+                      iconBgColor: const Color(0xFF4A5168),
                       onTap: () async {
                         final shouldRefresh = await Navigator.push(
                           context,
