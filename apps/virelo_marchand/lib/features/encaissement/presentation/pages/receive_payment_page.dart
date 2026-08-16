@@ -34,6 +34,41 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
         setState(() => _isProcessing = true);
 
         try {
+          // 0. Détection si c'est un QR Code Client Statique (Mode Wave direct)
+          try {
+            final parsedJson = jsonDecode(code);
+            if (parsedJson is Map && parsedJson['type'] == 'client_account') {
+              final String clientName = parsedJson['name'] ?? 'Client';
+              final String clientPhone = parsedJson['phone'] ?? '';
+              final String clientId = parsedJson['id']?.toString() ?? '0';
+
+              cameraController.stop();
+
+              final double? enteredAmount = await _promptAmountDialog(context, clientName, clientPhone);
+              if (enteredAmount == null || enteredAmount <= 0) {
+                if (mounted) setState(() => _isProcessing = false);
+                cameraController.start();
+                return;
+              }
+
+              await ApiClient().dio.post('/transfers/merchant', data: {
+                'client_id': clientId,
+                'amount': enteredAmount,
+              });
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Succès : ${enteredAmount.toInt()} FCFA encaissés auprès de $clientName !'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+                Navigator.pop(context);
+              }
+              return;
+            }
+          } catch (_) {}
+
           // Decode amount from token for local UI and offline storage
           double amount = 0;
           Map<String, dynamic> payload = {};
@@ -213,6 +248,58 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<double?> _promptAmountDialog(BuildContext context, String clientName, String clientPhone) async {
+    final controller = TextEditingController();
+    return showDialog<double>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text('Encaissement Client', style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Client : $clientName', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+              if (clientPhone.isNotEmpty)
+                Text('Tél : $clientPhone', style: AppTextStyles.bodySmall.copyWith(color: Colors.grey)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Montant à encaisser (FCFA)',
+                  hintText: 'Ex: 2500',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF161A22),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                final amount = double.tryParse(controller.text.replaceAll(' ', '')) ?? 0;
+                Navigator.pop(ctx, amount);
+              },
+              child: const Text('Valider'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

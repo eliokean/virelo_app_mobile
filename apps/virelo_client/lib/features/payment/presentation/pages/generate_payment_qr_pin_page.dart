@@ -12,6 +12,7 @@ import 'package:virelo_core/crypto/offline_crypto_service.dart';
 import '../../../../core/services/auto_sync_manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:virelo_core/services/biometric_service.dart';
 import 'generate_payment_qr_display_page.dart';
 
 class GeneratePaymentQrPinPage extends StatefulWidget {

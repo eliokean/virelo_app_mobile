@@ -6,6 +6,7 @@ import '../../../deposit/presentation/pages/deposit_amount_page.dart';
 import '../../../transfer/presentation/pages/transfer_contact_page.dart';
 import '../../../payment/presentation/pages/scan_invoice_page.dart';
 import '../../../payment/presentation/pages/generate_payment_qr_amount_page.dart';
+import '../../../payment/presentation/pages/show_client_personal_qr_page.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 
 class WalletActionsBar extends StatelessWidget {
@@ -203,7 +204,7 @@ class WalletActionsBar extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.accent.withValues(alpha: 0.15),
+                                color: AppColors.accent.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(Icons.contactless, color: AppColors.accent, size: 28),
@@ -254,7 +255,7 @@ class WalletActionsBar extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6C63FF).withValues(alpha: 0.15),
+                                color: const Color(0xFF6C63FF).withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(LucideIcons.qrCode, color: Color(0xFF6C63FF), size: 28),
@@ -271,6 +272,57 @@ class WalletActionsBar extends StatelessWidget {
                                   const SizedBox(height: 2),
                                   Text(
                                     'Scanner le QR code affiché par le marchand',
+                                    style: AppTextStyles.bodySmall.copyWith(color: Colors.white60),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(LucideIcons.chevronRight, color: Colors.white38),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Option 3 : Mon QR Code Personnel (Faire scanner par le marchand - Style Wave)
+                  Material(
+                    color: const Color(0xFF2C3138),
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ShowClientPersonalQrPage()),
+                        );
+                        onRefresh?.call();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF9F1C).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(LucideIcons.userCheck, color: Color(0xFFFF9F1C), size: 28),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Mon QR Code Client',
+                                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Afficher mon QR pour me faire scanner par le marchand (Style Wave)',
                                     style: AppTextStyles.bodySmall.copyWith(color: Colors.white60),
                                   ),
                                 ],
