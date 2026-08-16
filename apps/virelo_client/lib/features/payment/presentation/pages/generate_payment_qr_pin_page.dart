@@ -61,13 +61,25 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
     }
   }
 
-  Future<void> _generateToken() async {
+  Future<void> _onBiometricTap() async {
+    if (_isLoading) return;
+    final authenticated = await BiometricService().authenticate(
+      'Veuillez vous authentifier pour valider ce paiement',
+    );
+    if (authenticated) {
+      _generateToken(byPassPinCheck: true);
+    }
+  }
+
+  Future<void> _generateToken({bool byPassPinCheck = false}) async {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Verify PIN
-      final isValid = await _authService.verifyLocalPin(_pin);
-      if (!isValid) throw Exception('Code PIN incorrect');
+      // 1. Verify PIN if not bypassed by biometric authentication
+      if (!byPassPinCheck) {
+        final isValid = await _authService.verifyLocalPin(_pin);
+        if (!isValid) throw Exception('Code PIN incorrect');
+      }
 
       // 2. Si le client est en ligne et qu'il s'agit d'une facture marchand, payer directement en ligne
       final connectivity = await Connectivity().checkConnectivity();
@@ -203,6 +215,7 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
               onDigitTap: _onDigitTap,
               onDeleteTap: _onDeleteTap,
               showBiometric: true,
+              onBiometricTap: _onBiometricTap,
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
