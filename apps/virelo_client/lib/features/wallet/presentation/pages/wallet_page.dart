@@ -15,6 +15,7 @@ import '../pages/allocate_offline_budget_page.dart';
 import 'offline_sync_queue_page.dart';
 import 'offline_client_history_page.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import '../../../../core/services/auto_sync_manager.dart';
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
 
@@ -100,13 +101,16 @@ class _WalletPageState extends State<WalletPage> {
 
   Future<void> _fetchOfflineBudget() async {
     try {
+      // Déclencher d'abord la synchronisation des reçus en attente si le réseau est disponible
+      await AutoSyncManager().triggerSync();
+      
       double budget = 0.0;
       
       try {
         final apiData = await _walletService.getOfflineBalance();
         final serverBalance = double.tryParse(apiData['offline_balance'].toString()) ?? 0.0;
         await _offlineStorage.saveOfflineBudget(serverBalance);
-        budget = serverBalance;
+        budget = await _offlineStorage.getOfflineBudget();
       } catch (e) {
         debugPrint('==== ECHEC SYNC SERVER, FALLBACK LOCAL: $e ====');
         budget = await _offlineStorage.getOfflineBudget();
@@ -142,6 +146,7 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   Future<void> _refreshAll() async {
+    await AutoSyncManager().triggerSync();
     await Future.wait([
       _fetchBalance(),
       _fetchOfflineBudget(),

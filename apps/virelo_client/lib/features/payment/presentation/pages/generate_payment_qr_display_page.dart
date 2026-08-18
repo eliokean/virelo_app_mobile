@@ -165,18 +165,26 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
         
         const SizedBox(height: AppSpacing.xl),
 
-        // NFC BUTTON
-        OutlinedButton.icon(
-          onPressed: _startNfcTransmission,
-          icon: const Icon(Icons.contactless),
-          label: const Text('Approcher du TPE (NFC)'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.accent,
-            side: const BorderSide(color: AppColors.accent),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        const SizedBox(height: AppSpacing.xl),
+
+        // Badge NFC Actif (Émission automatique Tap to Pay)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.accent.withOpacity(0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.contactless, color: AppColors.accent, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'NFC prêt : Approchez le téléphone du TPE',
+                style: AppTextStyles.labelLarge.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ),
         

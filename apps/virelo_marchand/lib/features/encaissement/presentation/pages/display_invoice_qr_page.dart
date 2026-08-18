@@ -137,140 +137,127 @@ class _DisplayInvoiceQrPageState extends State<DisplayInvoiceQrPage> {
   Widget _buildQrDisplayView(String invoiceData) {
     final formattedAmount = widget.amount.toInt().toString();
 
-    return LayoutBuilder(
+    return SingleChildScrollView(
       key: const ValueKey('qr_view'),
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: AppSpacing.md),
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Facture à payer',
+            style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Demandez au client de scanner ce code pour régler $formattedAmount FCFA',
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Badge Statut Réseau
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _isOnline ? AppColors.accent.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _isOnline ? AppColors.accent : Colors.orange),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isOnline) ...[
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(color: AppColors.accent, strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'EN LIGNE — En attente du règlement...',
+                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ] else ...[
+                  const Icon(LucideIcons.wifiOff, color: Colors.orange, size: 16),
+                  const SizedBox(width: 8),
                   Text(
-                    'Facture à payer',
-                    style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                    'MODE HORS-LIGNE',
+                    style: AppTextStyles.labelSmall.copyWith(color: Colors.orange, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Demandez au client de scanner ce code pour régler $formattedAmount FCFA',
-                    style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Badge Statut Réseau
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _isOnline ? AppColors.accent.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _isOnline ? AppColors.accent : Colors.orange),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_isOnline) ...[
-                          const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(color: AppColors.accent, strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              'EN LIGNE — En attente du règlement...',
-                              style: AppTextStyles.labelSmall.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ] else ...[
-                          const Icon(LucideIcons.wifiOff, color: Colors.orange, size: 16),
-                          const SizedBox(width: 8),
-                          Text(
-                            'MODE HORS-LIGNE',
-                            style: AppTextStyles.labelSmall.copyWith(color: Colors.orange, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // QR Code Box (Dynamic size)
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        )
-                      ],
-                    ),
-                    child: QrImageView(
-                      data: invoiceData,
-                      version: QrVersions.auto,
-                      size: 210.0,
-                      backgroundColor: Colors.white,
-                    ),
-                  ),
-                  const Spacer(),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Bouton d'urgence Hors-Ligne uniquement si PAS en ligne ou en option secondaire
-                  if (!_isOnline) ...[
-                    SizedBox(
-                      width: double.infinity,
-                      child: VireloPrimaryButton(
-                        label: 'Scanner la preuve client',
-                        icon: LucideIcons.qrCode,
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ReceivePaymentPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ] else ...[
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: TextButton.icon(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ReceivePaymentPage(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(LucideIcons.scan, color: Colors.white38, size: 16),
-                        label: Flexible(
-                          child: Text(
-                            'Scanner la preuve (Secours Hors-Ligne)',
-                            style: AppTextStyles.labelSmall.copyWith(color: Colors.white38),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.md),
                 ],
-              ),
+              ],
             ),
           ),
-        );
-      },
+          const SizedBox(height: AppSpacing.xl),
+
+          // QR Code Box
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ],
+            ),
+            child: QrImageView(
+              data: invoiceData,
+              version: QrVersions.auto,
+              size: 210.0,
+              backgroundColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+
+          // Bouton d'urgence Hors-Ligne uniquement si PAS en ligne ou en option secondaire
+          if (!_isOnline) ...[
+            SizedBox(
+              width: double.infinity,
+              child: VireloPrimaryButton(
+                label: 'Scanner la preuve client',
+                icon: LucideIcons.qrCode,
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ReceivePaymentPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ] else ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ReceivePaymentPage(),
+                    ),
+                  );
+                },
+                icon: const Icon(LucideIcons.scan, color: Colors.white38, size: 16),
+                label: Text(
+                  'Scanner la preuve (Secours Hors-Ligne)',
+                  style: AppTextStyles.labelSmall.copyWith(color: Colors.white38),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+        ],
+      ),
     );
   }
 

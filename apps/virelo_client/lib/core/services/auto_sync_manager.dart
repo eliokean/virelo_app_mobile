@@ -38,7 +38,7 @@ class AutoSyncManager {
     final results = await Connectivity().checkConnectivity();
     if (results.contains(ConnectivityResult.mobile) || results.contains(ConnectivityResult.wifi)) {
       debugPrint('AutoSyncManager: Manual trigger. Network present. Syncing...');
-      _offlineSyncService.syncAll();
+      await _offlineSyncService.syncAll();
     }
   }
 

@@ -100,13 +100,33 @@ class OfflineStorageService {
     final val = box.get('offline_budget_$userId');
     debugPrint('==== OFFLINE BUDGET RAW VALUE: $val ====');
     if (val == null) return 0.0;
-    return double.tryParse(val.toString()) ?? 0.0;
+    
+    final baseBudget = double.tryParse(val.toString()) ?? 0.0;
+    
+    // Soustraire le montant des transactions locales PENDING_MERCHANT_SYNC
+    final pendingLocalTx = await getOfflineTransactions();
+    double pendingAmount = 0.0;
+    for (var tx in pendingLocalTx) {
+      if (tx['status'] == 'PENDING_MERCHANT_SYNC' || tx['status'] == 'pending') {
+        final amount = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0;
+        pendingAmount += amount;
+      }
+    }
+    
+    final effectiveBudget = baseBudget - pendingAmount;
+    return effectiveBudget < 0 ? 0.0 : effectiveBudget;
   }
 
   Future<void> deductOfflineBudget(double amount) async {
     final current = await getOfflineBudget();
     if (current >= amount) {
-      await saveOfflineBudget(current - amount);
+      // Déduire du budget de base
+      final userId = await _authService.getUserId();
+      if (userId == null) return;
+      final box = await _getBox();
+      final val = box.get('offline_budget_$userId');
+      final baseBudget = double.tryParse(val?.toString() ?? '0') ?? 0.0;
+      await saveOfflineBudget(baseBudget - amount);
     } else {
       throw Exception('Solde hors ligne insuffisant');
     }

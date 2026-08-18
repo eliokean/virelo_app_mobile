@@ -46,37 +46,52 @@ class PushNotificationService {
       settings: initSettings,
     );
 
-    // Listen to foreground messages
+    // Listen to foreground messages (force local notification popup)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Got a message whilst in the foreground!');
       debugPrint('Message data: ${message.data}');
 
-      if (message.notification != null) {
-        debugPrint('Message also contained a notification: ${message.notification}');
-        _showLocalNotification(message);
-      }
+      _showLocalNotification(
+        title: message.notification?.title ?? message.data['title'] ?? 'Notification Virelo',
+        body: message.notification?.body ?? message.data['body'] ?? 'Nouveau message reçu',
+        id: message.hashCode,
+      );
     });
 
     _isInitialized = true;
   }
 
-  Future<void> _showLocalNotification(RemoteMessage message) async {
+  Future<void> _showLocalNotification({
+    required String title,
+    required String body,
+    int? id,
+  }) async {
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'virelo_channel_id',
       'Virelo Notifications',
       channelDescription: 'Notifications pour Virelo',
       importance: Importance.max,
       priority: Priority.high,
-      showWhen: false,
+      showWhen: true,
+      playSound: true,
     );
     const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
 
     await _localNotificationsPlugin.show(
-      id: message.hashCode,
-      title: message.notification?.title,
-      body: message.notification?.body,
+      id: id ?? DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title: title,
+      body: body,
       notificationDetails: platformDetails,
     );
+  }
+
+  /// Déclencher une notification système immédiate sans passer par Internet (Mode Hors-Ligne)
+  Future<void> showOfflineNotification({
+    required String title,
+    required String body,
+  }) async {
+    await init();
+    await _showLocalNotification(title: title, body: body);
   }
 
   Future<String?> getToken() async {

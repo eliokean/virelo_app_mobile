@@ -6,6 +6,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import '../network/api_client.dart';
 import '../constants/api_constants.dart';
 import '../offline_sync/hive_manager.dart';
+import 'push_notification_service.dart';
 
 class AuthService {
   final ApiClient _apiClient;
@@ -67,6 +68,9 @@ class AuthService {
       final data = response.data;
       if (data != null && data['token'] != null) {
         await _apiClient.saveToken(data['token']);
+        // Envoi automatique du token FCM au serveur pour la réception des notifications push
+        PushNotificationService().sendTokenToBackend();
+
         if (data['user'] != null) {
           final userIdStr = data['user']['id']?.toString();
           if (userIdStr != null) {

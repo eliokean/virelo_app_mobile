@@ -36,6 +36,7 @@ class OfflineSyncService {
             'timestamp': receipt['timestamp'],
             'clientPublicKey': receipt['clientPublicKey'],
             'clientSignature': receipt['clientSignature'],
+            'validUntil': receipt['validUntil'] ?? DateTime.now().add(const Duration(days: 7)).toIso8601String(),
           };
           // Fire and forget
           await _apiClient.dio.post('/offline/client-push', data: payload);
