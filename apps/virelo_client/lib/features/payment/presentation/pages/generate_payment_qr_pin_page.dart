@@ -5,6 +5,7 @@ import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_pin_pad.dart';
+import 'package:virelo_design_system/widgets/virelo_alert_dialog.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
@@ -165,11 +166,10 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.error,
-          ),
+        VireloAlertDialog.showError(
+          context,
+          title: 'Oh non...',
+          message: e.toString().replaceAll('Exception: ', ''),
         );
         setState(() => _pin = '');
       }
