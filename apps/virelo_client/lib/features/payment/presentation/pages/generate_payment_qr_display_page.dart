@@ -163,26 +163,28 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
           ),
         ),
         
-        const SizedBox(height: AppSpacing.xl),
-
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.lg),
 
         // Badge NFC Actif (Émission automatique Tap to Pay)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.accent.withOpacity(0.12),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.accent.withOpacity(0.4)),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.contactless, color: AppColors.accent, size: 22),
               const SizedBox(width: 10),
-              Text(
-                'NFC prêt : Approchez le téléphone du TPE',
-                style: AppTextStyles.labelLarge.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
+              Flexible(
+                child: Text(
+                  'NFC prêt : Approchez le téléphone du TPE',
+                  style: AppTextStyles.labelLarge.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ],
           ),

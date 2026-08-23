@@ -10,7 +10,6 @@ import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
 import 'package:virelo_core/crypto/offline_crypto_service.dart';
 import 'package:virelo_core/services/biometric_service.dart';
-import 'package:virelo_core/services/push_notification_service.dart';
 import '../../../../core/services/auto_sync_manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
@@ -115,15 +114,8 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
         }
       }
 
-      // 3. Mode Hors-Ligne Cryptographique (Ed25519)
+      // 3. Mode Cryptographique Ed25519 (Génération du jeton sécurisé)
       final offlineStorage = OfflineStorageService(_authService);
-      
-      // Déduire du budget hors ligne UNIQUEMENT si le client est hors-ligne
-      if (!isOnline) {
-        await offlineStorage.deductOfflineBudget(widget.amount);
-      }
-
-      // Générer la signature Ed25519 et le payload
       final cryptoService = OfflineCryptoService(offlineStorage);
       await cryptoService.initializeKeys();
       final userId = await _authService.getUserId() ?? "UNKNOWN_CLIENT";
@@ -134,28 +126,28 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
         amount: widget.amount,
       );
 
-      // Sauvegarder dans l'historique local avec tous les métadonnées cryptographiques nécessaires au Client-Push
-      await offlineStorage.saveOfflineTransaction({
-        'type': 'PAYMENT_OFFLINE',
-        'amount': widget.amount,
-        'status': 'PENDING_MERCHANT_SYNC',
-        'uuid': payload.uuid,
-        'merchantId': widget.merchantId,
-        'sequenceNumber': payload.sequenceNumber,
-        'timestamp': payload.timestamp,
-        'clientPublicKey': payload.clientPublicKey,
-        'clientSignature': payload.clientSignature,
-        'validUntil': payload.validUntil,
-      });
+      // Déduire du budget et sauvegarder dans l'historique local UNIQUEMENT si le client est réellement hors-ligne
+      if (!isOnline) {
+        await offlineStorage.deductOfflineBudget(widget.amount);
+        
+        await offlineStorage.saveOfflineTransaction({
+          'type': 'PAYMENT_OFFLINE',
+          'amount': widget.amount,
+          'status': 'PENDING_MERCHANT_SYNC',
+          'uuid': payload.uuid,
+          'merchantId': widget.merchantId,
+          'sequenceNumber': payload.sequenceNumber,
+          'timestamp': payload.timestamp,
+          'clientPublicKey': payload.clientPublicKey,
+          'clientSignature': payload.clientSignature,
+          'validUntil': payload.validUntil,
+        });
+      }
 
       // Chiffrer le payload en Base64
       final encryptedToken = await cryptoService.encryptPayload(payload);
 
-      // Notification Locale Système Immédiate (Mode Hors-Ligne)
-      PushNotificationService().showOfflineNotification(
-        title: 'Paiement Hors-Ligne généré',
-        body: 'Un paiement de ${widget.amount.toInt()} FCFA a été sécurisé et déduit de votre solde.',
-      );
+      // Le jeton est prêt pour l'échange NFC/QR. La notification de confirmation sera envoyée lors de la validation effective du paiement.
 
       // Déclencher la synchronisation automatique si possible
       AutoSyncManager().triggerSync();
