@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import '../../../kyc/presentation/pages/kyc_upload_page.dart';
 
 class AllocateOfflineBudgetPage extends StatefulWidget {
   const AllocateOfflineBudgetPage({super.key});
@@ -84,11 +85,23 @@ class _AllocateOfflineBudgetPageState extends State<AllocateOfflineBudgetPage> {
           VireloAlertDialog.showKycRequired(
             context,
             message: errorMsg,
+            onCompleteKyc: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const KycUploadPage()),
+              );
+            },
           );
         } else if (errorMsg.contains('50%') || errorMsg.contains('limite') || errorMsg.contains('insuffisant')) {
           VireloAlertDialog.showLimitExceeded(
             context,
             message: errorMsg,
+            onUpgradeKyc: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const KycUploadPage()),
+              );
+            },
           );
         } else {
           showDialog(
