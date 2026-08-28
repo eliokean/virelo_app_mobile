@@ -377,13 +377,13 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                   ),
                   const SizedBox(width: AppSpacing.md),
 
-                  // Action 2: RETIRER
+                  // Action 2: RETIRER (Haute affordance)
                   Expanded(
                     child: _buildActionButton(
                       label: 'Retirer',
-                      icon: LucideIcons.arrowUpRight,
-                      iconColor: Colors.white,
-                      iconBgColor: const Color(0xFF4A5168),
+                      icon: LucideIcons.banknote,
+                      iconColor: const Color(0xFF00E5A0),
+                      iconBgColor: const Color(0xFF00E5A0).withValues(alpha: 0.15),
                       onTap: () async {
                         final shouldRefresh = await Navigator.push(
                           context,
