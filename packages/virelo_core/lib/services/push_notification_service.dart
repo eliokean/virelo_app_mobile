@@ -49,9 +49,29 @@ class PushNotificationService {
       settings: initSettings,
     );
 
-    // Listen to foreground messages (diffuse vers l'interface In-App)
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'virelo_channel_id',
+      'Virelo Notifications',
+      description: 'Notifications pour Virelo',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    await _localNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    // Listen to foreground messages (Affiche la vraie notification push système Android)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Got a message whilst in the foreground (In-App notification): ${message.data}');
+      debugPrint('Got a message whilst in the foreground (Push Notification FCM): ${message.data}');
+      
+      _showLocalNotification(
+        title: message.notification?.title ?? message.data['title'] ?? 'Notification Virelo',
+        body: message.notification?.body ?? message.data['body'] ?? 'Nouveau message reçu',
+        id: message.hashCode,
+      );
+
       onMessageStream.add(message);
     });
 
