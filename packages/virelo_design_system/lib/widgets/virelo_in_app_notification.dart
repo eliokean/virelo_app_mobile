@@ -25,10 +25,16 @@ class VireloInAppNotification {
     VoidCallback? onTap,
     Duration duration = const Duration(seconds: 4),
   }) {
-    final ctx = context ?? navigatorKey.currentContext;
-    if (ctx == null) return;
+    OverlayState? overlayState;
+    if (context != null) {
+      overlayState = Overlay.maybeOf(context, rootOverlay: true) ?? Overlay.maybeOf(context);
+    }
+    overlayState ??= navigatorKey.currentState?.overlay;
 
-    final overlayState = Overlay.of(ctx, rootOverlay: true);
+    if (overlayState == null) {
+      debugPrint("VireloInAppNotification: OverlayState introuvable.");
+      return;
+    }
 
     // Vibration haptique
     HapticFeedback.mediumImpact();
