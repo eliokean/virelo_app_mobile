@@ -91,13 +91,13 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFF1A1C1D), // Dark header
+        backgroundColor: const Color(0xFF1A1C1D),
         body: Column(
           children: [
             SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.lg),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.md),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -113,7 +113,7 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                       'Générer Facture QR',
                       style: AppTextStyles.headlineMedium.copyWith(color: Colors.white),
                     ),
-                    const SizedBox(width: 48), // Spacer
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
@@ -129,63 +129,57 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                 child: Column(
                   children: [
                     Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Montant à facturer',
-                            style: AppTextStyles.labelLarge.copyWith(color: const Color(0xFF8B93A8)),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8E8E9),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Text(
-                              'FCFA',
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: const Color(0xFF1A1C1D),
-                                fontWeight: FontWeight.bold,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8E8E9),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Text(
+                                'FCFA',
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: const Color(0xFF1A1C1D),
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                            const SizedBox(height: AppSpacing.md),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
                               child: Text(
                                 _formattedAmount,
                                 style: AppTextStyles.displayLarge.copyWith(
-                                  fontSize: 60,
+                                  fontSize: 56,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF1A1C1D),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          // Quick suggestions pills
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
-                            child: Row(
-                              children: [
-                                _buildQuickPill('+500', 500),
-                                _buildQuickPill('+1 000', 1000),
-                                _buildQuickPill('+2 000', 2000),
-                                _buildQuickPill('+5 000', 5000),
-                              ],
+                            const SizedBox(height: AppSpacing.md),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildQuickPill('+500', 500),
+                                  _buildQuickPill('+1 000', 1000),
+                                  _buildQuickPill('+2 000', 2000),
+                                  _buildQuickPill('+5 000', 5000),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.screenH),
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.md, AppSpacing.screenH, AppSpacing.lg),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -201,17 +195,17 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildNumpad(),
-                          const SizedBox(height: AppSpacing.xl),
+                          const SizedBox(height: AppSpacing.lg),
                           SizedBox(
                             width: double.infinity,
-                            height: 60,
+                            height: 56,
                             child: ElevatedButton(
                               onPressed: _amount == "0" ? null : _handleContinue,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.accent,
                                 disabledBackgroundColor: AppColors.surfaceBorder,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
+                                  borderRadius: BorderRadius.circular(28),
                                 ),
                                 elevation: 0,
                               ),
@@ -224,7 +218,6 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.md),
                         ],
                       ),
                     ),
@@ -240,19 +233,20 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
 
   Widget _buildQuickPill(String label, int value) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: ActionChip(
         label: Text(
           label,
           style: const TextStyle(
             color: Color(0xFF1A1C1D),
             fontWeight: FontWeight.w600,
-            fontSize: 13,
+            fontSize: 12,
           ),
         ),
         backgroundColor: Colors.white,
         side: const BorderSide(color: Color(0xFFE2E4E8)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         onPressed: () => _addQuickAmount(value),
       ),
     );
@@ -263,8 +257,8 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
       crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.5,
-      mainAxisSpacing: 8,
+      childAspectRatio: 1.6,
+      mainAxisSpacing: 4,
       crossAxisSpacing: 8,
       children: [
         for (int i = 1; i <= 9; i++) _buildNumpadButton(i.toString()),
@@ -289,12 +283,13 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
         borderRadius: BorderRadius.circular(16),
         child: Center(
           child: isIcon
-              ? const Icon(LucideIcons.delete, size: 28, color: Color(0xFF1A1C1D))
+              ? const Icon(LucideIcons.delete, size: 26, color: Color(0xFF1A1C1D))
               : Text(
                   value,
                   style: AppTextStyles.displayMedium.copyWith(
                     color: const Color(0xFF1A1C1D),
                     fontWeight: FontWeight.w600,
+                    fontSize: 26,
                   ),
                 ),
         ),
