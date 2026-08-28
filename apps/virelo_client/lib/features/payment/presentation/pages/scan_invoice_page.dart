@@ -383,7 +383,7 @@ class _QrScannerOverlayPainter extends CustomPainter {
     // Coin Haut-Droit
     final topRight = Path()
       ..moveTo(right - l, top)
-      ..lineTo(right - r)
+      ..lineTo(right - r, top)
       ..arcToPoint(Offset(right, top + r), radius: Radius.circular(r))
       ..lineTo(right, top + l);
     canvas.drawPath(topRight, cornerPaint);
