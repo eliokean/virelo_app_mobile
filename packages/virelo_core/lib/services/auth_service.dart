@@ -143,8 +143,25 @@ class AuthService {
       }
       return data;
     } on DioException catch (e) {
-      final msg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() : null;
-      throw Exception(msg ?? 'Erreur lors de l\'inscription (${e.response?.statusCode ?? 'inconnu'})');
+      String errorMsg = 'Erreur lors de l\'inscription (${e.response?.statusCode ?? 'inconnu'})';
+      if (e.response?.data is Map) {
+        final data = e.response!.data as Map;
+        if (data['errors'] != null && data['errors'] is Map) {
+          final errors = data['errors'] as Map;
+          final firstKey = errors.keys.firstOrNull;
+          if (firstKey != null && errors[firstKey] is List && (errors[firstKey] as List).isNotEmpty) {
+            errorMsg = (errors[firstKey] as List).first.toString();
+          }
+        } else if (data['message'] != null) {
+          errorMsg = data['message'].toString();
+        }
+      }
+      if (errorMsg.contains('The phone has already been taken') || errorMsg.contains('phone.unique')) {
+        errorMsg = 'Ce numéro de téléphone est déjà associé à un compte.';
+      } else if (errorMsg.contains('The email has already been taken') || errorMsg.contains('email.unique')) {
+        errorMsg = 'Cette adresse email est déjà utilisée.';
+      }
+      throw Exception(errorMsg);
     }
   }
 

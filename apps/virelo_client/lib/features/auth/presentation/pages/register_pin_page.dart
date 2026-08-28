@@ -116,8 +116,23 @@ class _RegisterPinPageState extends State<RegisterPinPage> {
       }
     } catch (e) {
       if (mounted) {
+        final cleanMsg = e.toString().replaceFirst('Exception: ', '').replaceFirst('Exception:', '').trim();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text(cleanMsg),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            action: cleanMsg.contains('déjà associé')
+                ? SnackBarAction(
+                    label: 'Se connecter',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
+                  )
+                : null,
+          ),
         );
         setState(() {
           _pin = '';

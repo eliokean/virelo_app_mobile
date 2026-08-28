@@ -83,18 +83,27 @@ class _RegisterPageState extends State<RegisterPage> {
       String errorMessage = 'Erreur lors de l\'inscription';
       if (e is DioException) {
         if (e.response?.data is Map) {
-          final data = e.response?.data as Map;
-          if (data['message'] != null) {
-            errorMessage = data['message'];
-            if (data['errors'] != null) {
-              errorMessage += '\n' + data['errors'].toString();
+          final data = e.response!.data as Map;
+          if (data['errors'] != null && data['errors'] is Map) {
+            final errors = data['errors'] as Map;
+            final firstKey = errors.keys.firstOrNull;
+            if (firstKey != null && errors[firstKey] is List && (errors[firstKey] as List).isNotEmpty) {
+              errorMessage = (errors[firstKey] as List).first.toString();
             }
+          } else if (data['message'] != null) {
+            errorMessage = data['message'].toString();
           }
         } else {
           errorMessage = e.message ?? e.toString();
         }
       } else {
-        errorMessage = e.toString();
+        errorMessage = e.toString().replaceFirst('Exception: ', '').replaceFirst('Exception:', '').trim();
+      }
+
+      if (errorMessage.contains('The phone has already been taken') || errorMessage.contains('phone.unique')) {
+        errorMessage = 'Ce numéro de téléphone est déjà associé à un compte.';
+      } else if (errorMessage.contains('The email has already been taken') || errorMessage.contains('email.unique')) {
+        errorMessage = 'Cette adresse email est déjà utilisée.';
       }
       
       if (mounted) {
@@ -102,7 +111,18 @@ class _RegisterPageState extends State<RegisterPage> {
           SnackBar(
             content: Text(errorMessage), 
             backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 4),
+            action: errorMessage.contains('déjà associé')
+                ? SnackBarAction(
+                    label: 'Se connecter',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      context.goNamed(RouteNames.login);
+                    },
+                  )
+                : null,
           ),
         );
       }
