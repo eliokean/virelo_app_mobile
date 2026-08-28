@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -7,6 +8,7 @@ import 'package:virelo_core/services/wallet_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../widgets/wallet_header.dart';
 import '../widgets/balance_hero_card.dart';
 import '../widgets/wallet_actions_bar.dart';
@@ -16,6 +18,7 @@ import 'offline_sync_queue_page.dart';
 import 'offline_client_history_page.dart';
 import 'package:virelo_core/offline_sync/offline_storage_service.dart';
 import '../../../../core/services/auto_sync_manager.dart';
+
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
 
@@ -23,10 +26,12 @@ class WalletPage extends StatefulWidget {
   State<WalletPage> createState() => _WalletPageState();
 }
 
-class _WalletPageState extends State<WalletPage> {
+class _WalletPageState extends State<WalletPage> with WidgetsBindingObserver {
   late final WalletService _walletService;
   late final OfflineStorageService _offlineStorage;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  StreamSubscription<RemoteMessage>? _fcmSubscription;
+  Timer? _autoRefreshTimer;
   
   String _userName = "";
   String _balance = "0";
@@ -37,15 +42,49 @@ class _WalletPageState extends State<WalletPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final apiClient = ApiClient();
     final authService = AuthService(apiClient);
     _walletService = WalletService(apiClient, authService);
     _offlineStorage = OfflineStorageService(authService);
     
     _loadCachedData();
-    _fetchBalance();
-    _fetchOfflineBudget();
-    _fetchRecentActivities();
+    _refreshAllData();
+
+    // 1. Écoute des événements Push FCM pour rafraîchissement temps réel
+    _fcmSubscription = FirebaseMessaging.onMessage.listen((_) {
+      _refreshAllData();
+    });
+
+    // 2. Polling silencieux toutes les 8 secondes quand l'écran est actif
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (mounted) {
+        _refreshAllData();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshAllData();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _fcmSubscription?.cancel();
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshAllData() async {
+    await Future.wait([
+      _fetchBalance(),
+      _fetchOfflineBudget(),
+      _fetchRecentActivities(),
+    ]);
   }
 
   Future<void> _loadCachedData() async {

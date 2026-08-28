@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -6,6 +7,7 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/merchant_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import 'generate_invoice_amount_page.dart';
 import 'nfc_reader_page.dart';
@@ -21,9 +23,12 @@ class MerchantDashboardPage extends StatefulWidget {
   State<MerchantDashboardPage> createState() => _MerchantDashboardPageState();
 }
 
-class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
+class _MerchantDashboardPageState extends State<MerchantDashboardPage> with WidgetsBindingObserver {
   late final MerchantService _merchantService;
   late final OfflineSyncService _offlineSyncService;
+  StreamSubscription<RemoteMessage>? _fcmSubscription;
+  Timer? _autoRefreshTimer;
+
   bool _isLoading = true;
   String _balance = "0";
   String _merchantName = "Chargement...";
@@ -36,13 +41,43 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _merchantService = MerchantService(ApiClient());
     _offlineSyncService = OfflineSyncService(ApiClient());
     _loadDashboardData();
+
+    // 1. Écoute des événements Push FCM pour rafraîchissement temps réel
+    _fcmSubscription = FirebaseMessaging.onMessage.listen((_) {
+      _loadDashboardData(silent: true);
+    });
+
+    // 2. Polling silencieux toutes les 8 secondes quand l'écran est actif
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (mounted) {
+        _loadDashboardData(silent: true);
+      }
+    });
   }
 
-  Future<void> _loadDashboardData() async {
-    setState(() => _isLoading = true);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadDashboardData(silent: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _fcmSubscription?.cancel();
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadDashboardData({bool silent = false}) async {
+    if (!silent && _transactions.isEmpty) {
+      setState(() => _isLoading = true);
+    }
     try {
       final pendingCount = await _offlineSyncService.getPendingCount();
       final pendingAmount = await _offlineSyncService.getPendingAmount();
@@ -71,8 +106,6 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
         final pendingCount = await _offlineSyncService.getPendingCount();
         final pendingAmount = await _offlineSyncService.getPendingAmount();
         setState(() {
-          _merchantName = "Boutique";
-          _balance = "0";
           _pendingSyncCount = pendingCount;
           _pendingAmount = pendingAmount;
           _isLoading = false;
