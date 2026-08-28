@@ -21,13 +21,23 @@ class _AllocateOfflineBudgetPageState extends State<AllocateOfflineBudgetPage> {
   String _amount = "0";
   bool _isAllocating = false;
 
+  String get _formattedAmount {
+    if (_amount == "0") return "0";
+    final result = StringBuffer();
+    for (int i = 0; i < _amount.length; i++) {
+      if (i > 0 && (_amount.length - i) % 3 == 0) result.write(' ');
+      result.write(_amount[i]);
+    }
+    return result.toString();
+  }
+
   void _onNumpadTap(String value) {
     setState(() {
       if (_amount == "0") {
-        if (value != "0") {
+        if (value != "0" && value != "00") {
           _amount = value;
         }
-      } else if (_amount.length < 7) {
+      } else if (_amount.length + value.length <= 8) {
         _amount += value;
       }
     });
@@ -160,7 +170,7 @@ class _AllocateOfflineBudgetPageState extends State<AllocateOfflineBudgetPage> {
             ),
             const Spacer(),
             Text(
-              '$_amount FCFA',
+              '$_formattedAmount FCFA',
               style: const TextStyle(
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
@@ -214,7 +224,7 @@ class _AllocateOfflineBudgetPageState extends State<AllocateOfflineBudgetPage> {
       crossAxisSpacing: 8,
       children: [
         for (int i = 1; i <= 9; i++) _buildNumpadButton(i.toString()),
-        _buildNumpadButton('.'),
+        _buildNumpadButton('00'),
         _buildNumpadButton('0'),
         _buildNumpadButton('del', isIcon: true),
       ],

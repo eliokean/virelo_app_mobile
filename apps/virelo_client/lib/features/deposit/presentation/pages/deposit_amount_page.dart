@@ -61,11 +61,12 @@ class _DepositAmountPageState extends State<DepositAmountPage> {
 
   void _appendDigit(String digit) {
     setState(() {
-      if (_amount == "0" && digit != ".") {
-        _amount = digit;
+      if (_amount == "0") {
+        if (digit != "0" && digit != "00") {
+          _amount = digit;
+        }
       } else {
-        if (digit == "." && _amount.contains(".")) return;
-        if (_amount.replaceFirst('.', '').length >= 9) return;
+        if (_amount.length + digit.length > 9) return;
         _amount += digit;
       }
     });
@@ -85,17 +86,10 @@ class _DepositAmountPageState extends State<DepositAmountPage> {
 
   String get _formattedAmount {
     if (_amount == "0") return "0";
-    final parts = _amount.split('.');
-    String whole = parts[0];
     final result = StringBuffer();
-    for (int i = 0; i < whole.length; i++) {
-      if (i > 0 && (whole.length - i) % 3 == 0) result.write(' ');
-      result.write(whole[i]);
-    }
-    if (parts.length > 1) {
-      result.write(',${parts[1]}');
-    } else if (_amount.endsWith('.')) {
-      result.write(',');
+    for (int i = 0; i < _amount.length; i++) {
+      if (i > 0 && (_amount.length - i) % 3 == 0) result.write(' ');
+      result.write(_amount[i]);
     }
     return result.toString();
   }
@@ -277,7 +271,7 @@ class _DepositAmountPageState extends State<DepositAmountPage> {
       crossAxisSpacing: 8,
       children: [
         for (int i = 1; i <= 9; i++) _buildNumpadButton(i.toString()),
-        _buildNumpadButton('.'),
+        _buildNumpadButton('00'),
         _buildNumpadButton('0'),
         _buildNumpadButton('del', isIcon: true),
       ],
