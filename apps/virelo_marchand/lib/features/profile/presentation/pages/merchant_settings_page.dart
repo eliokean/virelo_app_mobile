@@ -8,6 +8,7 @@ import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/services/merchant_service.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import 'merchant_kyc_page.dart';
 
 class MerchantSettingsPage extends StatefulWidget {
   final String merchantName;
@@ -24,7 +25,8 @@ class _MerchantSettingsPageState extends State<MerchantSettingsPage> {
 
   String _merchantName = "Boutique";
   String _merchantPhone = "";
-  final String _siret = "RCCM: RB/COT/24-B-8932";
+  final String _siret = "RCCM: En cours";
+  String _kycStatus = 'unverified'; // 'unverified', 'pending', 'approved', 'rejected'
   bool _pushNotifications = true;
   bool _audioAlerts = true;
   bool _biometricsEnabled = false;
@@ -53,6 +55,12 @@ class _MerchantSettingsPageState extends State<MerchantSettingsPage> {
       final statsData = stats['data'] ?? stats;
       final pendingCount = await _offlineSyncService.getPendingCount();
       final pendingAmount = await _offlineSyncService.getPendingAmount();
+      
+      String kycStatus = 'unverified';
+      try {
+        final kycResponse = await ApiClient().dio.get('/auth/kyc/status');
+        kycStatus = kycResponse.data['status'] ?? 'unverified';
+      } catch (_) {}
 
       if (mounted) {
         setState(() {
@@ -62,6 +70,7 @@ class _MerchantSettingsPageState extends State<MerchantSettingsPage> {
           } else if (name != null && name.isNotEmpty) {
             _merchantName = name;
           }
+          _kycStatus = kycStatus;
           _pendingCount = pendingCount;
           _pendingAmount = pendingAmount;
         });
@@ -299,31 +308,21 @@ class _MerchantSettingsPageState extends State<MerchantSettingsPage> {
                     children: [
                       _buildSettingsTile(
                         icon: LucideIcons.building,
-                        title: 'Fiche Entreprise (KYC Marchand)',
-                        subtitle: 'RCCM, IFU, Registre du commerce',
+                        title: 'Fiche Entreprise & KYC',
+                        subtitle: 'RCCM, IFU, Immatriculation officielle',
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE8F5E9),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                'Vérifié',
-                                style: AppTextStyles.labelSmall.copyWith(
-                                  color: const Color(0xFF2E7D32),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                            _buildKycStatusBadge(),
                             const SizedBox(width: 6),
                             const Icon(LucideIcons.chevronRight, size: 18, color: Color(0xFF8B93A8)),
                           ],
                         ),
                         onTap: () {
-                          _showBusinessInfoModal();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const MerchantKycPage()),
+                          ).then((_) => _loadMerchantDetails());
                         },
                       ),
                     ],
@@ -583,6 +582,51 @@ class _MerchantSettingsPageState extends State<MerchantSettingsPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildKycStatusBadge() {
+    Color bg;
+    Color textColor;
+    String label;
+
+    switch (_kycStatus) {
+      case 'approved':
+        bg = const Color(0xFFE8F5E9);
+        textColor = const Color(0xFF2E7D32);
+        label = 'Vérifié';
+        break;
+      case 'pending':
+        bg = const Color(0xFFFFF8E1);
+        textColor = const Color(0xFFF59E0B);
+        label = 'En attente';
+        break;
+      case 'rejected':
+        bg = const Color(0xFFFFEBEE);
+        textColor = AppColors.error;
+        label = 'À corriger';
+        break;
+      case 'unverified':
+      default:
+        bg = const Color(0xFFF3F4F6);
+        textColor = const Color(0xFF6B7280);
+        label = 'Non vérifié';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
