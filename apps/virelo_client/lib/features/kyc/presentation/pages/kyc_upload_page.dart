@@ -397,8 +397,8 @@ class _KycUploadPageState extends State<KycUploadPage> {
                 const SizedBox(height: AppSpacing.md),
                 _buildBenefitItem(
                   icon: LucideIcons.wallet,
-                  title: 'Plafond Hors-Ligne',
-                  subtitle: 'Jusqu\'à 500 000 FCFA allouables en coffre-fort',
+                  title: 'Séquestre Hors-Ligne',
+                  subtitle: 'Allouez jusqu\'à 50% de votre solde en budget hors-ligne',
                 ),
                 const Divider(height: 24, thickness: 0.5),
                 _buildBenefitItem(
@@ -520,7 +520,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
                 ),
                 _buildTimelineStep(
                   title: '3. Activation du Niveau 2',
-                  subtitle: 'Déblocage automatique du plafond de 500 000 FCFA',
+                  subtitle: 'Déblocage de l\'allocation jusqu\'à 50% de vos fonds',
                   isLast: true,
                 ),
               ],
@@ -738,7 +738,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Validez votre identité pour sécuriser jusqu\'à 500 000 FCFA en budget hors-ligne.',
+                        'Validez votre identité pour sécuriser jusqu\'à 50% de votre solde en budget hors-ligne.',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: Colors.grey[700],
                           height: 1.4,

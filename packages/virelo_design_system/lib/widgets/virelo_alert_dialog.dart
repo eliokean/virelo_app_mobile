@@ -352,7 +352,7 @@ class VireloAlertDialog extends StatelessWidget {
         alertType: VireloAlertType.kyc,
         title: title ?? 'Vérification d\'identité requise',
         message: message ??
-            'Votre profil n\'est pas encore vérifié. Soumettez votre pièce d\'identité (KYC) pour débloquer votre séquestre et augmenter vos plafonds jusqu\'à 500 000 FCFA.',
+            'Votre profil n\'est pas encore vérifié. Soumettez votre pièce d\'identité (KYC) pour débloquer votre séquestre et allouer jusqu\'à 50% de vos fonds en mode hors-ligne.',
         badgeText: 'SÉCURITÉ & KYC',
         primaryButtonLabel: 'Compléter mon KYC',
         onPrimaryPressed: onCompleteKyc,
