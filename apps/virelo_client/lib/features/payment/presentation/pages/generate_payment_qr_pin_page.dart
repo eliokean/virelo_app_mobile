@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
+import 'package:virelo_design_system/virelo_design_system.dart';
 import 'package:virelo_design_system/widgets/virelo_pin_pad.dart';
 import 'package:virelo_design_system/widgets/virelo_alert_dialog.dart';
 import 'package:virelo_core/network/api_client.dart';
@@ -98,11 +99,11 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
           });
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Paiement de ${widget.amount} FCFA effectué avec succès !'),
-                backgroundColor: AppColors.success,
-              ),
+            VireloInAppNotification.show(
+              title: 'Paiement Effectué !',
+              message: 'Paiement vers ${widget.merchantName} validé avec succès.',
+              amount: widget.amount.toInt().toString(),
+              type: InAppNotificationType.payment,
             );
             Navigator.of(context).popUntil((route) => route.isFirst);
             return;
