@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/platform_tags.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
@@ -21,7 +19,6 @@ class ScanContactPage extends StatefulWidget {
 }
 
 class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProviderStateMixin {
-  bool _isNfcAvailable = false;
   bool _isProcessingOfflinePayment = false;
   bool _isTorchOn = false;
   final MobileScannerController _cameraController = MobileScannerController();
@@ -43,68 +40,12 @@ class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProv
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
     );
-
-    _initNfc();
-  }
-
-  Future<void> _initNfc() async {
-    bool isAvailable = false;
-    try {
-      isAvailable = await NfcManager.instance.isAvailable();
-    } catch (e) {
-      // Ignore if NFC is not supported on this device
-    }
-
-    if (mounted) {
-      setState(() {
-        _isNfcAvailable = isAvailable;
-      });
-    }
-
-    if (isAvailable) {
-      try {
-        NfcManager.instance.startSession(
-          onDiscovered: (NfcTag tag) async {
-            NfcManager.instance.stopSession();
-            try {
-              final ndef = Ndef.from(tag);
-              final cachedMessage = ndef?.cachedMessage;
-
-              if (cachedMessage != null) {
-                for (var record in cachedMessage.records) {
-                  final payloadStr = String.fromCharCodes(record.payload);
-                  final uri = Uri.tryParse(payloadStr);
-                  
-                  if (uri != null && uri.scheme == 'virelo' && uri.host == 'offline_pay') {
-                    final merchantId = uri.queryParameters['merchantId'] ?? 'UNKNOWN';
-                    final amountStr = uri.queryParameters['amount'] ?? '0';
-                    final amount = double.tryParse(amountStr) ?? 0.0;
-                    
-                    if (mounted) {
-                      _handleOfflinePayment(merchantId, amount);
-                    }
-                    return;
-                  }
-                }
-              }
-            } catch (e) {
-              // Failed to parse tag
-            }
-          }
-        );
-      } catch (e) {
-        // Ignore session start errors
-      }
-    }
   }
 
   @override
   void dispose() {
     _animController.dispose();
     _cameraController.dispose();
-    if (_isNfcAvailable) {
-      NfcManager.instance.stopSession();
-    }
     super.dispose();
   }
 
@@ -248,7 +189,7 @@ class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProv
             ),
           ),
 
-          // 5. Instruction au dessus / dessous du cadrage
+          // 5. Instruction sous le cadrage
           Positioned(
             top: topCutOut + cutOutSize + 24,
             left: 20,
@@ -256,7 +197,7 @@ class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProv
             child: Column(
               children: [
                 Text(
-                  'Placez le QR Code dans le cadre pour scanner',
+                  'Placez le QR Code de votre contact dans le cadre',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
@@ -267,7 +208,7 @@ class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProv
             ),
           ),
 
-          // 6. Carte d'information NFC en bas
+          // 6. Carte d'information en bas
           Positioned(
             bottom: 24,
             left: AppSpacing.screenH,
@@ -291,14 +232,12 @@ class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProv
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _isNfcAvailable 
-                          ? AppColors.accent.withOpacity(0.15) 
-                          : Colors.white.withOpacity(0.1),
+                      color: AppColors.accent.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      _isNfcAvailable ? LucideIcons.radio : LucideIcons.qrCode,
-                      color: _isNfcAvailable ? AppColors.accent : Colors.white70,
+                    child: const Icon(
+                      LucideIcons.qrCode,
+                      color: AppColors.accent,
                       size: 24,
                     ),
                   ),
@@ -309,7 +248,7 @@ class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProv
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _isNfcAvailable ? 'NFC & QR Actifs' : 'Scanner QR Code',
+                          'Scanner le Destinataire',
                           style: AppTextStyles.labelLarge.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -317,9 +256,7 @@ class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProv
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _isNfcAvailable
-                              ? 'Scannez un QR ou approchez un smartphone'
-                              : 'Visez un code QR Virelo ou contact',
+                          'Visez le code QR Virelo du destinataire pour remplir automatiquement le numéro',
                           style: AppTextStyles.bodySmall.copyWith(
                             color: Colors.white70,
                           ),

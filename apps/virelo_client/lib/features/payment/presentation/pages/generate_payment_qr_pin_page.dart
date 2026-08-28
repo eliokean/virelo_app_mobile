@@ -15,17 +15,20 @@ import '../../../../core/services/auto_sync_manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'generate_payment_qr_display_page.dart';
+import 'nfc_tap_to_pay_display_page.dart';
 
 class GeneratePaymentQrPinPage extends StatefulWidget {
   final double amount;
   final String merchantId;
   final String merchantName;
+  final bool isNfc;
 
   const GeneratePaymentQrPinPage({
     super.key, 
     required this.amount,
     this.merchantId = 'ANY',
     this.merchantName = 'un marchand',
+    this.isNfc = true,
   });
 
   @override
@@ -148,21 +151,31 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
       // Chiffrer le payload en Base64
       final encryptedToken = await cryptoService.encryptPayload(payload);
 
-      // Le jeton est prêt pour l'échange NFC/QR. La notification de confirmation sera envoyée lors de la validation effective du paiement.
-
       // Déclencher la synchronisation automatique si possible
       AutoSyncManager().triggerSync();
 
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => GeneratePaymentQrDisplayPage(
-              amount: widget.amount,
-              token: encryptedToken,
-              payload: payload,
+        if (widget.isNfc) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => NfcTapToPayDisplayPage(
+                amount: widget.amount,
+                token: encryptedToken,
+                payload: payload,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => GeneratePaymentQrDisplayPage(
+                amount: widget.amount,
+                token: encryptedToken,
+                payload: payload,
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -200,7 +213,9 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Confirmez le paiement de ${widget.amount} FCFA',
+              widget.isNfc 
+                  ? 'Confirmez le paiement sans contact de ${widget.amount.toInt()} FCFA'
+                  : 'Confirmez le paiement de ${widget.amount.toInt()} FCFA',
               style: AppTextStyles.bodyMedium,
             ),
             if (widget.merchantId != 'ANY')

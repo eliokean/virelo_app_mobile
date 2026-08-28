@@ -8,17 +8,11 @@ import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_primary_button.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/offline_sync/offline_authorization_payload.dart';
-import 'package:virelo_core/crypto/offline_crypto_service.dart';
-import 'package:virelo_core/offline_sync/offline_storage_service.dart';
-import 'package:virelo_core/services/auth_service.dart';
-import 'package:virelo_core/nfc/nfc_payment_service.dart';
-
-import 'package:virelo_core/nfc/virelo_hce_client.dart';
 
 class GeneratePaymentQrDisplayPage extends StatefulWidget {
   final double amount;
   final String token; // Le token obfusqué pour le QR
-  final OfflineAuthorizationPayload payload; // Le payload complet pour le NFC
+  final OfflineAuthorizationPayload payload;
 
   const GeneratePaymentQrDisplayPage({
     super.key,
@@ -38,15 +32,12 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
   @override
   void initState() {
     super.initState();
-    // Active l'émulation de carte NFC sans contact (HCE) pour transmission instantanée
-    VireloHceClient.setPayload(widget.token);
     _startPolling();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    VireloHceClient.clearPayload();
     super.dispose();
   }
 
@@ -163,33 +154,6 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
           ),
         ),
         
-        const SizedBox(height: AppSpacing.lg),
-
-        // Badge NFC Actif (Émission automatique Tap to Pay)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.accent.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.accent.withOpacity(0.4)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.contactless, color: AppColors.accent, size: 22),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  'NFC prêt : Approchez le téléphone du TPE',
-                  style: AppTextStyles.labelLarge.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
         const Spacer(flex: 2),
         VireloPrimaryButton(
           label: 'Terminé',
@@ -197,47 +161,6 @@ class _GeneratePaymentQrDisplayPageState extends State<GeneratePaymentQrDisplayP
         ),
         const SizedBox(height: AppSpacing.xl),
       ],
-    );
-  }
-
-  void _startNfcTransmission() async {
-    final offlineStorage = OfflineStorageService(AuthService(ApiClient()));
-    final nfcService = NfcPaymentService(OfflineCryptoService(offlineStorage));
-    
-    // Show a bottom sheet to tell the user to hold phone near TPE
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          height: 250,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.contactless, size: 64, color: AppColors.accent),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'Approchez votre téléphone du TPE',
-                style: AppTextStyles.headlineMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        );
-      }
-    );
-
-    await nfcService.sendPaymentPayload(
-      widget.payload,
-      () {
-        Navigator.pop(context); // Close bottom sheet
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paiement transmis avec succès !')));
-      },
-      (error) {
-        Navigator.pop(context); // Close bottom sheet
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: AppColors.error));
-      }
     );
   }
 

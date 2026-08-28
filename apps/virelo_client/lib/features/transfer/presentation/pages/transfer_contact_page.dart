@@ -290,8 +290,8 @@ class _TransferContactPageState extends State<TransferContactPage> {
                         )),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(child: _buildQuickActionCard(
-                          icon: LucideIcons.scanLine,
-                          title: 'Scanner\nQR / NFC',
+                          icon: LucideIcons.qrCode,
+                          title: 'Scanner\nQR Code',
                           color: const Color(0xFF94A3B8), // Slate grey doux
                           onTap: () async {
                             final phone = await Navigator.push(

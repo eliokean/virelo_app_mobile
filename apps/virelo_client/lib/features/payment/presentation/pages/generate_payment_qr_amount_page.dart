@@ -186,7 +186,7 @@ class _GeneratePaymentQrAmountPageState extends State<GeneratePaymentQrAmountPag
                               : Text(
                                   _offlineBudget > 0
                                       ? 'Budget hors-ligne: ${_offlineBudget.toInt()} FCFA'
-                                      : 'Paiement sans contact NFC / QR',
+                                      : 'Paiement sans contact (NFC)',
                                   style: AppTextStyles.labelSmall.copyWith(
                                     color: const Color(0xFF8B93A8),
                                     letterSpacing: 1.2,
