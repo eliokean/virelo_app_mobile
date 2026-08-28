@@ -198,23 +198,30 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                           const SizedBox(height: AppSpacing.lg),
                           SizedBox(
                             width: double.infinity,
-                            height: 56,
+                            height: 60,
                             child: ElevatedButton(
                               onPressed: _amount == "0" ? null : _handleContinue,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.accent,
                                 disabledBackgroundColor: AppColors.surfaceBorder,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
                                 elevation: 0,
                               ),
-                              child: Text(
-                                'Afficher le QR Code Facture',
-                                style: AppTextStyles.headlineMedium.copyWith(
-                                  color: const Color(0xFF161A22),
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Continuer',
+                                    style: AppTextStyles.headlineMedium.copyWith(
+                                      color: const Color(0xFF161A22),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  const Icon(LucideIcons.arrowRight, color: Color(0xFF161A22)),
+                                ],
                               ),
                             ),
                           ),
