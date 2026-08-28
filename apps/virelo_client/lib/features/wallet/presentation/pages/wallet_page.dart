@@ -49,17 +49,17 @@ class _WalletPageState extends State<WalletPage> with WidgetsBindingObserver {
     _offlineStorage = OfflineStorageService(authService);
     
     _loadCachedData();
-    _refreshAllData();
+    _refreshAll();
 
-    // 1. Écoute des événements Push FCM pour rafraîchissement temps réel
+    // 1. Écoute des événements Push FCM pour rafraîchissement temps réel immédiat
     _fcmSubscription = FirebaseMessaging.onMessage.listen((_) {
-      _refreshAllData();
+      _refreshAll();
     });
 
     // 2. Polling silencieux toutes les 8 secondes quand l'écran est actif
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       if (mounted) {
-        _refreshAllData();
+        _refreshAll();
       }
     });
   }
@@ -67,7 +67,7 @@ class _WalletPageState extends State<WalletPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _refreshAllData();
+      _refreshAll();
     }
   }
 
