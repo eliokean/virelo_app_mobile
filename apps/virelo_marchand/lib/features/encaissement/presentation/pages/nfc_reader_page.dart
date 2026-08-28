@@ -84,12 +84,6 @@ class _NfcReaderPageState extends State<NfcReaderPage> with SingleTickerProvider
             _isSuccess = true;
           });
           HapticFeedback.heavyImpact();
-          VireloInAppNotification.show(
-            title: 'Paiement Sans Contact NFC',
-            message: 'Client $clientId débité avec succès (Hors-ligne).',
-            amount: payload.amount.toInt().toString(),
-            type: InAppNotificationType.payment,
-          );
           await Future.delayed(const Duration(seconds: 2));
           if (mounted) Navigator.pop(context);
         }
@@ -108,12 +102,6 @@ class _NfcReaderPageState extends State<NfcReaderPage> with SingleTickerProvider
           _isSuccess = true;
         });
         HapticFeedback.heavyImpact();
-        VireloInAppNotification.show(
-          title: 'Paiement Sans Contact NFC',
-          message: 'Client $clientId débité avec succès.',
-          amount: payload.amount.toInt().toString(),
-          type: InAppNotificationType.payment,
-        );
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) Navigator.pop(context);
       }

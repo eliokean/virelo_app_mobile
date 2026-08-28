@@ -94,11 +94,11 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
             );
 
             if (mounted) {
-              VireloInAppNotification.show(
-                title: 'Paiement Encaissé !',
-                message: 'QR Code de preuve validé avec succès.',
-                amount: amount.toInt().toString(),
-                type: InAppNotificationType.payment,
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Paiement réussi ! ${amount.toInt()} XOF encaissés.'),
+                  backgroundColor: AppColors.success,
+                ),
               );
               Navigator.pop(context); // Go back to dashboard
             }

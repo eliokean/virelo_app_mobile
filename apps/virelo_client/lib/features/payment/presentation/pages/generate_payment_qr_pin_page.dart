@@ -99,11 +99,11 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
           });
 
           if (mounted) {
-            VireloInAppNotification.show(
-              title: 'Paiement Effectué !',
-              message: 'Paiement vers ${widget.merchantName} validé avec succès.',
-              amount: widget.amount.toInt().toString(),
-              type: InAppNotificationType.payment,
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Paiement de ${widget.amount.toInt()} FCFA effectué avec succès !'),
+                backgroundColor: AppColors.success,
+              ),
             );
             Navigator.of(context).popUntil((route) => route.isFirst);
             return;

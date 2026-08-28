@@ -71,14 +71,16 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
         setState(() => _isTransferring = false);
         
         final isPending = response.data['is_pending_claim'] == true;
-        
-        VireloInAppNotification.show(
-          title: isPending ? 'Transfert en attente' : 'Transfert Envoyé !',
-          message: isPending 
-              ? 'Un SMS d\'invitation a été envoyé au ${widget.beneficiaryPhone}.'
-              : 'Transfert de $_formattedAmount FCFA vers ${widget.beneficiaryName} validé.',
-          amount: _formattedAmount,
-          type: InAppNotificationType.payment,
+        final message = isPending 
+            ? 'Transfert en attente. Un SMS a été envoyé au destinataire pour l\'inviter à s\'inscrire.'
+            : 'Transfert effectué avec succès !';
+            
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: isPending ? const Color(0xFFE65100) : const Color(0xFF8DC973),
+            duration: const Duration(seconds: 4),
+          ),
         );
         Navigator.of(context).popUntil((route) => route.isFirst);
       }

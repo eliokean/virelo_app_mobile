@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -18,8 +17,6 @@ class PushNotificationService {
 
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  
-  static final StreamController<RemoteMessage> onMessageStream = StreamController<RemoteMessage>.broadcast();
   
   bool _isInitialized = false;
 
@@ -42,7 +39,7 @@ class PushNotificationService {
       debugPrint('User declined or has not accepted permission');
     }
 
-    // Initialize local notifications for background display
+    // Initialize local notifications for system push display
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_notification');
     const InitializationSettings initSettings = InitializationSettings(android: androidSettings);
     await _localNotificationsPlugin.initialize(
@@ -71,8 +68,6 @@ class PushNotificationService {
         body: message.notification?.body ?? message.data['body'] ?? 'Nouveau message reçu',
         id: message.hashCode,
       );
-
-      onMessageStream.add(message);
     });
 
     _isInitialized = true;
@@ -91,6 +86,7 @@ class PushNotificationService {
       priority: Priority.high,
       showWhen: true,
       playSound: true,
+      enableVibration: true,
     );
     const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
 

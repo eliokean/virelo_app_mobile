@@ -96,12 +96,6 @@ class _DisplayInvoiceQrPageState extends State<DisplayInvoiceQrPage> {
                 setState(() {
                   _isPaid = true;
                 });
-                VireloInAppNotification.show(
-                  title: 'Facture Encaissée !',
-                  message: 'Règlement client confirmé pour ${widget.merchantName}.',
-                  amount: widget.amount.toInt().toString(),
-                  type: InAppNotificationType.payment,
-                );
                 Future.delayed(const Duration(seconds: 3), () {
                   if (mounted) {
                     Navigator.of(context).popUntil((route) => route.isFirst);
