@@ -80,6 +80,7 @@ class _ScanInvoicePageState extends State<ScanInvoicePage> with SingleTickerProv
                   amount: amount,
                   merchantId: merchantId,
                   merchantName: merchantName,
+                  isNfc: false,
                 ),
               ),
             );

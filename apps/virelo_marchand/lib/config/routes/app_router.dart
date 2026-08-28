@@ -8,8 +8,11 @@ import '../../../features/encaissement/presentation/pages/merchant_dashboard_pag
 import '../../../features/encaissement/presentation/pages/receive_payment_page.dart';
 import '../../../features/historique/presentation/pages/history_page.dart';
 
+import 'package:virelo_design_system/virelo_design_system.dart';
+
 class AppRouter {
   static final router = GoRouter(
+    navigatorKey: VireloInAppNotification.navigatorKey,
     initialLocation: '/',
     routes: [
       GoRoute(

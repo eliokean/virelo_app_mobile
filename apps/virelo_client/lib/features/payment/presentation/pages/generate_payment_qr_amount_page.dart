@@ -92,7 +92,10 @@ class _GeneratePaymentQrAmountPageState extends State<GeneratePaymentQrAmountPag
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => GeneratePaymentQrPinPage(amount: amountValue),
+        builder: (_) => GeneratePaymentQrPinPage(
+          amount: amountValue,
+          isNfc: true,
+        ),
       ),
     );
   }

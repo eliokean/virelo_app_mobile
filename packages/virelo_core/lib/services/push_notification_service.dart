@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -17,6 +18,8 @@ class PushNotificationService {
 
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  
+  static final StreamController<RemoteMessage> onMessageStream = StreamController<RemoteMessage>.broadcast();
   
   bool _isInitialized = false;
 
@@ -39,23 +42,17 @@ class PushNotificationService {
       debugPrint('User declined or has not accepted permission');
     }
 
-    // Initialize local notifications for foreground display
+    // Initialize local notifications for background display
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_notification');
     const InitializationSettings initSettings = InitializationSettings(android: androidSettings);
     await _localNotificationsPlugin.initialize(
       settings: initSettings,
     );
 
-    // Listen to foreground messages (force local notification popup)
+    // Listen to foreground messages (diffuse vers l'interface In-App)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Got a message whilst in the foreground!');
-      debugPrint('Message data: ${message.data}');
-
-      _showLocalNotification(
-        title: message.notification?.title ?? message.data['title'] ?? 'Notification Virelo',
-        body: message.notification?.body ?? message.data['body'] ?? 'Nouveau message reçu',
-        id: message.hashCode,
-      );
+      debugPrint('Got a message whilst in the foreground (In-App notification): ${message.data}');
+      onMessageStream.add(message);
     });
 
     _isInitialized = true;

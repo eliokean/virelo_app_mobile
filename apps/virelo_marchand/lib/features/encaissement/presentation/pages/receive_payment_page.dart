@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
+import 'package:virelo_design_system/virelo_design_system.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:virelo_core/network/api_client.dart';
@@ -93,11 +94,11 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
             );
 
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Paiement réussi ! $amount XOF encaissés.'),
-                  backgroundColor: AppColors.success,
-                ),
+              VireloInAppNotification.show(
+                title: 'Paiement Encaissé !',
+                message: 'QR Code de preuve validé avec succès.',
+                amount: amount.toInt().toString(),
+                type: InAppNotificationType.payment,
               );
               Navigator.pop(context); // Go back to dashboard
             }

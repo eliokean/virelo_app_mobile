@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
+import 'package:virelo_design_system/virelo_design_system.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_primary_button.dart';
 import 'package:virelo_core/network/api_client.dart';
@@ -95,6 +96,12 @@ class _DisplayInvoiceQrPageState extends State<DisplayInvoiceQrPage> {
                 setState(() {
                   _isPaid = true;
                 });
+                VireloInAppNotification.show(
+                  title: 'Facture Encaissée !',
+                  message: 'Règlement client confirmé pour ${widget.merchantName}.',
+                  amount: widget.amount.toInt().toString(),
+                  type: InAppNotificationType.payment,
+                );
                 Future.delayed(const Duration(seconds: 3), () {
                   if (mounted) {
                     Navigator.of(context).popUntil((route) => route.isFirst);

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
+import 'package:virelo_design_system/virelo_design_system.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/nfc/nfc_payment_service.dart';
 import 'package:virelo_core/crypto/offline_crypto_service.dart';
@@ -83,6 +84,12 @@ class _NfcReaderPageState extends State<NfcReaderPage> with SingleTickerProvider
             _isSuccess = true;
           });
           HapticFeedback.heavyImpact();
+          VireloInAppNotification.show(
+            title: 'Paiement Sans Contact NFC',
+            message: 'Client $clientId débité avec succès (Hors-ligne).',
+            amount: payload.amount.toInt().toString(),
+            type: InAppNotificationType.payment,
+          );
           await Future.delayed(const Duration(seconds: 2));
           if (mounted) Navigator.pop(context);
         }
@@ -101,6 +108,12 @@ class _NfcReaderPageState extends State<NfcReaderPage> with SingleTickerProvider
           _isSuccess = true;
         });
         HapticFeedback.heavyImpact();
+        VireloInAppNotification.show(
+          title: 'Paiement Sans Contact NFC',
+          message: 'Client $clientId débité avec succès.',
+          amount: payload.amount.toInt().toString(),
+          type: InAppNotificationType.payment,
+        );
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) Navigator.pop(context);
       }
