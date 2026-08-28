@@ -4,7 +4,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
-import 'package:virelo_design_system/widgets/virelo_primary_button.dart';
 import 'display_invoice_qr_page.dart';
 
 class GenerateInvoiceAmountPage extends StatefulWidget {
@@ -26,11 +25,11 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
 
   void _appendDigit(String digit) {
     setState(() {
-      if (_amount == "0" && digit != ".") {
+      if (_amount == "0") {
+        if (digit == "00" || digit == "0") return;
         _amount = digit;
       } else {
-        if (digit == "." && _amount.contains(".")) return;
-        if (_amount.replaceFirst('.', '').length >= 9) return;
+        if (_amount.length + digit.length > 9) return;
         _amount += digit;
       }
     });
@@ -48,25 +47,29 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
     HapticFeedback.lightImpact();
   }
 
+  void _addQuickAmount(int value) {
+    setState(() {
+      final current = int.tryParse(_amount) ?? 0;
+      final next = current + value;
+      if (next.toString().length <= 9) {
+        _amount = next.toString();
+      }
+    });
+    HapticFeedback.lightImpact();
+  }
+
   String get _formattedAmount {
     if (_amount == "0") return "0";
-    final parts = _amount.split('.');
-    String whole = parts[0];
     final result = StringBuffer();
-    for (int i = 0; i < whole.length; i++) {
-      if (i > 0 && (whole.length - i) % 3 == 0) result.write(' ');
-      result.write(whole[i]);
-    }
-    if (parts.length > 1) {
-      result.write(',${parts[1]}');
-    } else if (_amount.endsWith('.')) {
-      result.write(',');
+    for (int i = 0; i < _amount.length; i++) {
+      if (i > 0 && (_amount.length - i) % 3 == 0) result.write(' ');
+      result.write(_amount[i]);
     }
     return result.toString();
   }
 
   void _handleContinue() {
-    final doubleAmount = double.tryParse(_amount.replaceAll(' ', '').replaceAll(',', '.')) ?? 0;
+    final doubleAmount = double.tryParse(_amount.replaceAll(' ', '')) ?? 0;
     if (doubleAmount <= 0) return;
 
     Navigator.push(
@@ -107,7 +110,7 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                       ),
                     ),
                     Text(
-                      'Générer Facture',
+                      'Générer Facture QR',
                       style: AppTextStyles.headlineMedium.copyWith(color: Colors.white),
                     ),
                     const SizedBox(width: 48), // Spacer
@@ -130,7 +133,7 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Montant de la facture',
+                            'Montant à facturer',
                             style: AppTextStyles.labelLarge.copyWith(color: const Color(0xFF8B93A8)),
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -148,7 +151,7 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.xxl),
+                          const SizedBox(height: AppSpacing.lg),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Padding(
@@ -156,10 +159,25 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                               child: Text(
                                 _formattedAmount,
                                 style: AppTextStyles.displayLarge.copyWith(
-                                  fontSize: 64,
+                                  fontSize: 60,
+                                  fontWeight: FontWeight.bold,
                                   color: const Color(0xFF1A1C1D),
                                 ),
                               ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          // Quick suggestions pills
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+                            child: Row(
+                              children: [
+                                _buildQuickPill('+500', 500),
+                                _buildQuickPill('+1 000', 1000),
+                                _buildQuickPill('+2 000', 2000),
+                                _buildQuickPill('+5 000', 5000),
+                              ],
                             ),
                           ),
                         ],
@@ -198,7 +216,7 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
                                 elevation: 0,
                               ),
                               child: Text(
-                                'Créer le QR Code',
+                                'Afficher le QR Code Facture',
                                 style: AppTextStyles.headlineMedium.copyWith(
                                   color: const Color(0xFF161A22),
                                   fontWeight: FontWeight.bold,
@@ -220,6 +238,26 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
     );
   }
 
+  Widget _buildQuickPill(String label, int value) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ActionChip(
+        label: Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF1A1C1D),
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        side: const BorderSide(color: Color(0xFFE2E4E8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        onPressed: () => _addQuickAmount(value),
+      ),
+    );
+  }
+
   Widget _buildNumpad() {
     return GridView.count(
       crossAxisCount: 3,
@@ -230,7 +268,7 @@ class _GenerateInvoiceAmountPageState extends State<GenerateInvoiceAmountPage> {
       crossAxisSpacing: 8,
       children: [
         for (int i = 1; i <= 9; i++) _buildNumpadButton(i.toString()),
-        _buildNumpadButton('.'),
+        _buildNumpadButton('00'),
         _buildNumpadButton('0'),
         _buildNumpadButton('del', isIcon: true),
       ],
