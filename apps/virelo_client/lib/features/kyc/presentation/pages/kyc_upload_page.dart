@@ -23,8 +23,36 @@ class _KycUploadPageState extends State<KycUploadPage> {
   File? _backImage;
   File? _selfieImage;
   
+  bool _isFetchingStatus = true;
   bool _isLoading = false;
+  String _kycStatus = 'unverified'; // 'unverified', 'pending', 'approved', 'rejected'
+  String? _adminNotes;
   String _documentType = 'CNI'; // 'CNI', 'PASSPORT', 'PERMIS'
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchKycStatus();
+  }
+
+  Future<void> _fetchKycStatus() async {
+    try {
+      final response = await ApiClient().dio.get('/auth/kyc/status');
+      if (mounted) {
+        setState(() {
+          _kycStatus = response.data['status'] ?? 'unverified';
+          _adminNotes = response.data['admin_notes'];
+          _isFetchingStatus = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isFetchingStatus = false;
+        });
+      }
+    }
+  }
 
   Future<void> _pickImage(String type, {ImageSource source = ImageSource.gallery}) async {
     final XFile? image = await _picker.pickImage(
@@ -147,6 +175,10 @@ class _KycUploadPageState extends State<KycUploadPage> {
       await ApiClient().dio.post('/auth/kyc/upload', data: formData);
 
       if (mounted) {
+        setState(() {
+          _kycStatus = 'pending';
+        });
+
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -170,7 +202,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  'Vos documents sont en cours de vérification par notre équipe. Vous recevrez une notification dès validation.',
+                  'Vos documents sont en cours d\'examen par nos équipes. Vous recevrez une notification dès validation.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[700]),
                 ),
@@ -180,8 +212,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
                   height: 52,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context); // Close dialog
-                      Navigator.pop(context); // Back to settings
+                      Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent,
@@ -222,7 +253,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFF1A1C1D), // Dark header bar
+        backgroundColor: const Color(0xFF1A1C1D),
         body: Column(
           children: [
             // Header
@@ -245,7 +276,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
                       'Vérification KYC',
                       style: AppTextStyles.headlineMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(width: 48), // Spacer
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
@@ -256,170 +287,568 @@ class _KycUploadPageState extends State<KycUploadPage> {
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF9F9FA), // Clean bright surface
+                  color: Color(0xFFF9F9FA),
                   borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
                 ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.xl, AppSpacing.screenH, 40),
+                child: _isFetchingStatus
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                    : _buildContentBasedOnStatus(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContentBasedOnStatus() {
+    if (_kycStatus == 'approved') {
+      return _buildApprovedView();
+    } else if (_kycStatus == 'pending') {
+      return _buildPendingView();
+    } else {
+      // 'unverified' ou 'rejected'
+      return _buildUploadFormView();
+    }
+  }
+
+  /// Vue lorsque le compte est entièrement validé et vérifié
+  Widget _buildApprovedView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.xxl, AppSpacing.screenH, 40),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2E7D32).withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: const Icon(
+              LucideIcons.shieldCheck,
+              color: Color(0xFF2E7D32),
+              size: 64,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            'Identité Vérifiée !',
+            style: AppTextStyles.headlineLarge.copyWith(
+              color: const Color(0xFF161A22),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF81C784)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(LucideIcons.check, color: Color(0xFF2E7D32), size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'KYC Niveau 2 Actif',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: const Color(0xFF2E7D32),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+
+          // Carte des privilèges débloqués
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Avantages activés',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: const Color(0xFF161A22),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _buildBenefitItem(
+                  icon: LucideIcons.wallet,
+                  title: 'Plafond Hors-Ligne',
+                  subtitle: 'Jusqu\'à 500 000 FCFA allouables en coffre-fort',
+                ),
+                const Divider(height: 24, thickness: 0.5),
+                _buildBenefitItem(
+                  icon: LucideIcons.zap,
+                  title: 'Paiements Sans Contact NFC & QR',
+                  subtitle: 'Transactions instantanées sans limitation standard',
+                ),
+                const Divider(height: 24, thickness: 0.5),
+                _buildBenefitItem(
+                  icon: LucideIcons.lock,
+                  title: 'Sécurité Bancaire Maximale',
+                  subtitle: 'Signature cryptographique Ed25519 certifiée',
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xxl),
+
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                elevation: 0,
+              ),
+              child: Text(
+                'Retour',
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: const Color(0xFF161A22),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Vue lorsque les documents sont en cours de validation par les administrateurs
+  Widget _buildPendingView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.xxl, AppSpacing.screenH, 40),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(
+              LucideIcons.clock,
+              color: Colors.orange.shade800,
+              size: 64,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            'Vérification en cours',
+            style: AppTextStyles.headlineLarge.copyWith(
+              color: const Color(0xFF161A22),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Vos pièces d\'identité ont bien été transmises et sont actuellement en cours d\'examen par notre équipe de conformité.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[700], height: 1.5),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+
+          // Étapes de validation
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Statut du dossier',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: const Color(0xFF161A22),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _buildTimelineStep(
+                  title: '1. Documents reçus',
+                  subtitle: 'Photos recto/verso et selfie enregistrés',
+                  isDone: true,
+                ),
+                _buildTimelineStep(
+                  title: '2. Examen de conformité',
+                  subtitle: 'Délai moyen de traitement : 24 à 48 heures',
+                  isInProgress: true,
+                ),
+                _buildTimelineStep(
+                  title: '3. Activation du Niveau 2',
+                  subtitle: 'Déblocage automatique du plafond de 500 000 FCFA',
+                  isLast: true,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xxl),
+
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF161A22),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                elevation: 0,
+              ),
+              child: Text(
+                'Compris',
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBenefitItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: const Color(0xFF161A22), size: 22),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: const Color(0xFF161A22),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimelineStep({
+    required String title,
+    required String subtitle,
+    bool isDone = false,
+    bool isInProgress = false,
+    bool isLast = false,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: isDone
+                    ? const Color(0xFF2E7D32)
+                    : (isInProgress ? Colors.orange.shade700 : Colors.grey.shade300),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isDone ? LucideIcons.check : (isInProgress ? LucideIcons.loader : LucideIcons.circle),
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 36,
+                color: isDone ? const Color(0xFF2E7D32) : Colors.grey.shade300,
+              ),
+          ],
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: const Color(0xFF161A22),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Vue normale du formulaire de téléversement
+  Widget _buildUploadFormView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.xl, AppSpacing.screenH, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Si rejeté précédemment, afficher le motif
+          if (_kycStatus == 'rejected') ...[
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFEF5350)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.alertTriangle, color: Color(0xFFC62828), size: 28),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Dossier non validé',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: const Color(0xFFC62828),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _adminNotes ?? 'Veuillez soumettre des photos plus nettes et lisibles de votre pièce d\'identité.',
+                          style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFFB71C1C)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+
+          // Banner info KYC
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(LucideIcons.shieldCheck, color: Color(0xFF161A22), size: 28),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Banner info KYC
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 15,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withOpacity(0.18),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(LucideIcons.shieldCheck, color: Color(0xFF161A22), size: 28),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Débloquez vos plafonds',
-                                    style: AppTextStyles.labelLarge.copyWith(
-                                      color: const Color(0xFF161A22),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Validez votre identité pour sécuriser jusqu\'à 500 000 FCFA en budget hors-ligne.',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: Colors.grey[700],
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: AppSpacing.xxl),
-
-                      // Section : Type de document
                       Text(
-                        'Type de pièce d\'identité',
+                        'Débloquez vos plafonds',
                         style: AppTextStyles.labelLarge.copyWith(
                           color: const Color(0xFF161A22),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      _buildDocumentTypeSelector(),
-
-                      const SizedBox(height: AppSpacing.xxl),
-
-                      // Section : Documents à téléverser
+                      const SizedBox(height: 4),
                       Text(
-                        'Photos des documents',
-                        style: AppTextStyles.labelLarge.copyWith(
-                          color: const Color(0xFF161A22),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-
-                      // 1. Recto
-                      _buildUploadCard(
-                        title: 'Photo du Recto',
-                        subtitle: 'Face avant lisible et nette de la pièce',
-                        icon: LucideIcons.creditCard,
-                        type: 'front',
-                        file: _frontImage,
-                        isRequired: true,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-
-                      // 2. Verso
-                      if (_documentType != 'PASSPORT') ...[
-                        _buildUploadCard(
-                          title: 'Photo du Verso',
-                          subtitle: 'Face arrière de la pièce (Optionnel)',
-                          icon: LucideIcons.creditCard,
-                          type: 'back',
-                          file: _backImage,
-                          isRequired: false,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-
-                      // 3. Selfie
-                      _buildUploadCard(
-                        title: 'Selfie en direct',
-                        subtitle: 'Photo claire de votre visage bien éclairé',
-                        icon: LucideIcons.camera,
-                        type: 'selfie',
-                        file: _selfieImage,
-                        isRequired: true,
-                      ),
-
-                      const SizedBox(height: AppSpacing.xxl),
-
-                      // Submit button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 60,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitKyc,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            disabledBackgroundColor: Colors.grey[300],
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF161A22)),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Soumettre mes documents',
-                                      style: AppTextStyles.headlineMedium.copyWith(
-                                        color: const Color(0xFF161A22),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppSpacing.sm),
-                                    const Icon(LucideIcons.arrowRight, color: Color(0xFF161A22)),
-                                  ],
-                                ),
+                        'Validez votre identité pour sécuriser jusqu\'à 500 000 FCFA en budget hors-ligne.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.grey[700],
+                          height: 1.4,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
+          ),
+
+          const SizedBox(height: AppSpacing.xxl),
+
+          // Section : Type de document
+          Text(
+            'Type de pièce d\'identité',
+            style: AppTextStyles.labelLarge.copyWith(
+              color: const Color(0xFF161A22),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildDocumentTypeSelector(),
+
+          const SizedBox(height: AppSpacing.xxl),
+
+          // Section : Documents à téléverser
+          Text(
+            'Photos des documents',
+            style: AppTextStyles.labelLarge.copyWith(
+              color: const Color(0xFF161A22),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // 1. Recto
+          _buildUploadCard(
+            title: 'Photo du Recto',
+            subtitle: 'Face avant lisible et nette de la pièce',
+            icon: LucideIcons.creditCard,
+            type: 'front',
+            file: _frontImage,
+            isRequired: true,
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // 2. Verso
+          if (_documentType != 'PASSPORT') ...[
+            _buildUploadCard(
+              title: 'Photo du Verso',
+              subtitle: 'Face arrière de la pièce (Optionnel)',
+              icon: LucideIcons.creditCard,
+              type: 'back',
+              file: _backImage,
+              isRequired: false,
+            ),
+            const SizedBox(height: AppSpacing.md),
           ],
-        ),
+
+          // 3. Selfie
+          _buildUploadCard(
+            title: 'Selfie en direct',
+            subtitle: 'Photo claire de votre visage bien éclairé',
+            icon: LucideIcons.camera,
+            type: 'selfie',
+            file: _selfieImage,
+            isRequired: true,
+          ),
+
+          const SizedBox(height: AppSpacing.xxl),
+
+          // Submit button
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _submitKyc,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                disabledBackgroundColor: Colors.grey[300],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 0,
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF161A22)),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Soumettre mes documents',
+                          style: AppTextStyles.headlineMedium.copyWith(
+                            color: const Color(0xFF161A22),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Icon(LucideIcons.arrowRight, color: Color(0xFF161A22)),
+                      ],
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
