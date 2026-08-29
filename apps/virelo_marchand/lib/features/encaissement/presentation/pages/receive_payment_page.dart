@@ -11,7 +11,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import '../../../../core/services/auto_sync_manager.dart';
 import 'package:virelo_core/services/auth_service.dart';
-import 'package:virelo_core/offline_sync/offline_storage_service.dart';
+import 'package:virelo_core/virelo_core.dart';
 import 'package:virelo_core/crypto/offline_crypto_service.dart';
 
 class ReceivePaymentPage extends StatefulWidget {
@@ -124,6 +124,9 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage>
               '/offline/sync',
               data: payload,
             );
+
+            // Update GPS Position on payment
+            TelemetryService().sendTerminalPing();
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(

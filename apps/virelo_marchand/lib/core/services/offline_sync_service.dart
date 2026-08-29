@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dio/dio.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:virelo_core/network/api_client.dart';
+import 'package:virelo_core/virelo_core.dart';
 
 class OfflineSyncService {
   static const String _storageKey = 'offline_transactions';
@@ -59,18 +61,45 @@ class OfflineSyncService {
     try {
       final batchId = 'batch_${_uuid.v4()}';
       
+      // Capture GPS location if available
+      double? lat;
+      double? lng;
+      try {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (serviceEnabled) {
+          final permission = await Geolocator.checkPermission();
+          if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+            final pos = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.medium,
+              timeLimit: const Duration(seconds: 3),
+            );
+            lat = pos.latitude;
+            lng = pos.longitude;
+          }
+        }
+      } catch (_) {}
+
+      final payload = {
+        'batch_id': batchId,
+        'transactions': transactions,
+        if (lat != null && lng != null) 'latitude': lat,
+        if (lat != null && lng != null) 'longitude': lng,
+        'location_name': lat != null ? 'Position GPS Réelle (Télécollecte)' : 'Abidjan, Côte d’Ivoire',
+        'battery_level': 85,
+      };
+
       final response = await _apiClient.dio.post(
         '/sync/telecollecte',
-        data: {
-          'batch_id': batchId,
-          'transactions': transactions,
-        },
+        data: payload,
       );
 
       if (response.statusCode == 200 || response.statusCode == 202) {
         // Success, clear local storage
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_storageKey);
+        
+        // Trigger live ping in background
+        TelemetryService().sendTerminalPing();
       } else {
         throw Exception('Échec de la synchronisation');
       }
