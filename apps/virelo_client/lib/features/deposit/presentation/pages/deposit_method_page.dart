@@ -8,7 +8,7 @@ import 'package:virelo_core/services/biometric_service.dart';
 import 'package:virelo_core/services/wallet_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:virelo_design_system/widgets/virelo_alert_dialog.dart';
 import 'deposit_success_page.dart';
 
 class DepositMethodPage extends StatefulWidget {
@@ -283,16 +283,27 @@ class _DepositMethodPageState extends State<DepositMethodPage> {
                                            );
                                            if (context.mounted) Navigator.pop(context, true); // Pop and refresh
                                          }
-                                      } catch (e) {
-                                        if (context.mounted) {
-                                          setState(() {
-                                            _isLoading = false;
-                                          });
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
-                                          );
-                                        }
-                                      }
+                                       } catch (e) {
+                                         if (context.mounted) {
+                                           setState(() {
+                                             _isLoading = false;
+                                           });
+                                           final cleanMsg = e.toString().replaceAll('Exception:', '').trim();
+                                           final lower = cleanMsg.toLowerCase();
+                                           if (lower.contains('gelé') || lower.contains('bloqué') || lower.contains('banni') || lower.contains('suspendu')) {
+                                             VireloAlertDialog.showAccountFrozen(
+                                               context,
+                                               message: cleanMsg,
+                                             );
+                                           } else {
+                                             VireloAlertDialog.showError(
+                                               context,
+                                               title: 'Échec du Rechargement',
+                                               message: cleanMsg,
+                                             );
+                                           }
+                                         }
+                                       }
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(

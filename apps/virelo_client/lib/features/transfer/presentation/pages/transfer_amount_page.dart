@@ -7,7 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:virelo_design_system/theme/app_colors.dart';
 import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
-import 'package:virelo_design_system/virelo_design_system.dart';
+import 'package:virelo_design_system/widgets/virelo_alert_dialog.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'show_offline_proof_page.dart';
@@ -87,11 +87,21 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
     } on DioException catch (e) {
       if (mounted) {
         setState(() => _isTransferring = false);
-        final errorMsg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() ?? 'Erreur réseau, passage en mode hors ligne...' : 'Erreur réseau, passage en mode hors ligne...';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.orange),
-        );
-        _handleOfflineFallback();
+        final statusCode = e.response?.statusCode;
+        final errorMsg = e.response?.data is Map ? (e.response!.data as Map)['message']?.toString() ?? 'Erreur lors du transfert' : 'Erreur de communication avec le serveur';
+        final lower = errorMsg.toLowerCase();
+
+        if (statusCode == 403 || lower.contains('gelé') || lower.contains('bloqué') || lower.contains('banni') || lower.contains('suspendu')) {
+          VireloAlertDialog.showAccountFrozen(
+            context,
+            message: errorMsg,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMsg), backgroundColor: Colors.orange),
+          );
+          _handleOfflineFallback();
+        }
       }
     } catch (e) {
       if (mounted) {

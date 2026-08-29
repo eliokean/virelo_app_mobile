@@ -7,6 +7,7 @@ import 'package:virelo_design_system/constants/app_spacing.dart';
 enum VireloAlertType {
   kyc,
   limit,
+  frozen,
   warning,
   error,
   info,
@@ -45,6 +46,8 @@ class VireloAlertDialog extends StatelessWidget {
         return const Color(0xFFFF9800); // Amber / Orange
       case VireloAlertType.limit:
         return const Color(0xFFFF4D4D); // Red
+      case VireloAlertType.frozen:
+        return const Color(0xFF00B4D8); // Ice Cyan / Blue
       case VireloAlertType.warning:
         return const Color(0xFFFFA000);
       case VireloAlertType.error:
@@ -61,6 +64,8 @@ class VireloAlertDialog extends StatelessWidget {
       case VireloAlertType.kyc:
       case VireloAlertType.warning:
         return const Color(0xFFFFF8E7);
+      case VireloAlertType.frozen:
+        return const Color(0xFFE8F7FA);
       case VireloAlertType.limit:
       case VireloAlertType.error:
         return const Color(0xFFFFEBEB);
@@ -78,6 +83,8 @@ class VireloAlertDialog extends StatelessWidget {
         return LucideIcons.shieldAlert;
       case VireloAlertType.limit:
         return LucideIcons.lock;
+      case VireloAlertType.frozen:
+        return LucideIcons.shieldAlert;
       case VireloAlertType.warning:
         return LucideIcons.alertTriangle;
       case VireloAlertType.error:
@@ -96,6 +103,8 @@ class VireloAlertDialog extends StatelessWidget {
         return 'KYC REQUISE';
       case VireloAlertType.limit:
         return 'LIMITE ATTEINTE';
+      case VireloAlertType.frozen:
+        return 'COMPTE GELÉ';
       case VireloAlertType.warning:
         return 'AVERTISSEMENT';
       case VireloAlertType.error:
@@ -110,151 +119,168 @@ class VireloAlertDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      elevation: 0,
       backgroundColor: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        decoration: BoxDecoration(
-          color: isLightMode ? Colors.white : const Color(0xFF1E232A),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Top Circular Illustration Icon Badge
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: _lightBgColor,
-                shape: BoxShape.circle,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Center(
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: isLightMode ? Colors.white : const Color(0xFF1E222D),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
               ),
-              child: Center(
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: _mainColor.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    _icon,
-                    size: 32,
-                    color: _mainColor,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Badge Tag (Optional)
-            if (badgeText != null) ...[
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Decorative Graphic
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 28, bottom: 20),
                 decoration: BoxDecoration(
-                  color: _lightBgColor,
-                  borderRadius: BorderRadius.circular(12),
+                  color: isLightMode ? _lightBgColor : _mainColor.withValues(alpha: 0.1),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                child: Text(
-                  _defaultBadge.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: _mainColor,
-                    letterSpacing: 1.1,
+                child: Center(
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: _mainColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _mainColor.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        _icon,
+                        size: 34,
+                        color: _mainColor,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
+
+              // Content Area
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Column(
+                  children: [
+                    // Badge Text
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _mainColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _defaultBadge,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: _mainColor,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Title
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                        color: isLightMode ? const Color(0xFF161A22) : Colors.white,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Message
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: isLightMode ? const Color(0xFF5E6573) : const Color(0xFFA0A6B2),
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Primary Action Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: onPrimaryPressed ?? () => Navigator.of(context).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _mainColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          primaryButtonLabel,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Secondary Action Button (Optional)
+                    if (secondaryButtonLabel != null) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: TextButton(
+                          onPressed: onSecondaryPressed ?? () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: isLightMode ? const Color(0xFF707784) : const Color(0xFFA0A6B2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            secondaryButtonLabel!,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ],
-
-            // Title
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.headlineMedium.copyWith(
-                color: isLightMode ? const Color(0xFF1D2939) : Colors.white,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-
-            // Message Body
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: isLightMode ? const Color(0xFF667085) : const Color(0xFF9EA3B0),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Primary Action Button (Pill shaped)
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _mainColor,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (onPrimaryPressed != null) {
-                    onPrimaryPressed!();
-                  }
-                },
-                child: Text(
-                  primaryButtonLabel.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
-
-            if (secondaryButtonLabel != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (onSecondaryPressed != null) {
-                    onSecondaryPressed!();
-                  }
-                },
-                child: Text(
-                  secondaryButtonLabel!,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isLightMode ? const Color(0xFF667085) : const Color(0xFF9EA3B0),
-                  ),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
   }
 
-  /// Popups d'aide prédéfinis (Succès, Erreur, Warning, Info, KYC, Limites)
+  // ==================== HELPER STATIC METHODS ====================
+
   static Future<void> showSuccess(
     BuildContext context, {
     required String title,
@@ -335,6 +361,29 @@ class VireloAlertDialog extends StatelessWidget {
         message: message,
         primaryButtonLabel: primaryButtonLabel,
         onPrimaryPressed: onPrimaryPressed,
+      ),
+    );
+  }
+
+  static Future<void> showAccountFrozen(
+    BuildContext context, {
+    String? title,
+    String? message,
+    VoidCallback? onContactSupport,
+  }) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => VireloAlertDialog(
+        alertType: VireloAlertType.frozen,
+        title: title ?? 'Compte Temporairement Gelé',
+        message: message ??
+            'Votre compte fait l\'objet d\'une mesure de sécurité conservatoire. Les transferts d\'argent, paiements et recharges sont temporairement suspendus.',
+        badgeText: 'SÉCURITÉ & CONFORMITÉ',
+        primaryButtonLabel: 'Compris',
+        onPrimaryPressed: () => Navigator.of(context).pop(),
+        secondaryButtonLabel: onContactSupport != null ? 'Contacter le Support' : null,
+        onSecondaryPressed: onContactSupport,
       ),
     );
   }
