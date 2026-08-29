@@ -171,17 +171,30 @@ class _MerchantKycPageState extends State<MerchantKycPage> {
     setState(() => _isLoading = true);
 
     try {
+      final frontFile = await MultipartFile.fromFile(_frontImage!.path, filename: 'merchant_front.jpg');
+      final selfieFile = await MultipartFile.fromFile(_selfieImage!.path, filename: 'merchant_selfie.jpg');
+      MultipartFile? backFile;
+      if (_backImage != null) {
+        backFile = await MultipartFile.fromFile(_backImage!.path, filename: 'merchant_back.jpg');
+      }
+
       final formData = FormData.fromMap({
         'document_type': _documentType,
-        'front_image': await MultipartFile.fromFile(_frontImage!.path, filename: 'merchant_front.jpg'),
-        if (_backImage != null)
-          'back_image': await MultipartFile.fromFile(_backImage!.path, filename: 'merchant_back.jpg'),
-        'selfie_image': await MultipartFile.fromFile(_selfieImage!.path, filename: 'merchant_selfie.jpg'),
+        'front_image': frontFile,
+        'storefront_photo': frontFile,
+        'selfie_image': selfieFile,
+        'manager_id_card': selfieFile,
+        if (backFile != null) 'back_image': backFile,
+        if (backFile != null) 'rccm_document': backFile,
       });
 
       final response = await ApiClient().dio.post(
         '/kyb/upload',
         data: formData,
+        options: Options(
+          sendTimeout: const Duration(seconds: 90),
+          receiveTimeout: const Duration(seconds: 90),
+        ),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
