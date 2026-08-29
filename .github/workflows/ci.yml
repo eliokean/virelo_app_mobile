@@ -1,0 +1,72 @@
+name: Flutter Mobile CI/CD
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release Mobile APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Root & Package Dependencies
+        run: |
+          flutter pub get
+          (cd packages/virelo_core && flutter pub get)
+          (cd packages/virelo_design_system && flutter pub get)
+          (cd apps/virelo_client && flutter pub get)
+          (cd apps/virelo_marchand && flutter pub get)
+
+      - name: Build Virelo Pay Client APK (Release)
+        run: |
+          cd apps/virelo_client
+          flutter build apk --release --dart-define=API_BASE_URL=https://backend-virelo.onrender.com
+
+      - name: Build Virelo Terminal Marchand APK (Release)
+        run: |
+          cd apps/virelo_marchand
+          flutter build apk --release --dart-define=API_BASE_URL=https://backend-virelo.onrender.com
+
+      - name: Prepare APK Release Artifacts
+        run: |
+          mkdir -p release_artifacts
+          cp apps/virelo_client/build/app/outputs/flutter-apk/app-release.apk release_artifacts/virelo-pay-client.apk
+          cp apps/virelo_marchand/build/app/outputs/flutter-apk/app-release.apk release_artifacts/virelo-terminal-marchand.apk
+
+      - name: Create GitHub Release and Upload APKs
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ startsWith(github.ref, 'refs/tags/') && format('Virelo Mobile Release {0}', github.ref_name) || 'Virelo Mobile Latest Release' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            release_artifacts/virelo-pay-client.apk
+            release_artifacts/virelo-terminal-marchand.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
