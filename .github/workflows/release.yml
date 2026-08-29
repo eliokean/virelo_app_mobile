@@ -1,0 +1,70 @@
+name: Build & Release Mobile APKs
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build Release APKs & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: |
+          flutter pub get
+          cd packages/virelo_core && flutter pub get && cd ../..
+          cd packages/virelo_design_system && flutter pub get && cd ../..
+          cd apps/virelo_client && flutter pub get && cd ../..
+          cd apps/virelo_marchand && flutter pub get && cd ../..
+
+      - name: Build Virelo Pay Client APK
+        run: |
+          cd apps/virelo_client
+          flutter build apk --release --dart-define=API_BASE_URL=https://backend-virelo.onrender.com
+
+      - name: Build Virelo Terminal Marchand APK
+        run: |
+          cd apps/virelo_marchand
+          flutter build apk --release --dart-define=API_BASE_URL=https://backend-virelo.onrender.com
+
+      - name: Prepare APK Release Artifacts
+        run: |
+          mkdir -p release_artifacts
+          cp apps/virelo_client/build/app/outputs/flutter-apk/app-release.apk release_artifacts/virelo-pay-client.apk
+          cp apps/virelo_marchand/build/app/outputs/flutter-apk/app-release.apk release_artifacts/virelo-terminal-marchand.apk
+
+      - name: Create GitHub Release and Upload APKs
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Virelo Mobile Release ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            release_artifacts/virelo-pay-client.apk
+            release_artifacts/virelo-terminal-marchand.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
