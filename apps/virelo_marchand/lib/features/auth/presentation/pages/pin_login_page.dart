@@ -80,6 +80,7 @@ class _PinLoginPageState extends State<PinLoginPage> {
 
   void _navigateToDashboard() {
     PushNotificationService().sendTokenToBackend();
+    TelemetryService().sendTerminalPing();
     context.goNamed(RouteNames.dashboard);
   }
 
