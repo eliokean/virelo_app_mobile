@@ -53,6 +53,12 @@ class ApiClient {
           options.path = '/api${options.path.startsWith('/') ? options.path : '/${options.path}'}';
         }
 
+        // Si la requête contient du FormData (upload de fichiers), laisser Dio gérer le multipart boundary
+        if (options.data is FormData) {
+          options.headers.remove('Content-Type');
+          options.contentType = 'multipart/form-data';
+        }
+
         // Ajouter le token dynamiquement
         final token = await _secureStorage.read(key: 'auth_token');
         if (token != null) {

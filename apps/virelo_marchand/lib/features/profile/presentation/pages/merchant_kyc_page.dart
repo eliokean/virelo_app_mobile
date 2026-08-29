@@ -220,8 +220,20 @@ class _MerchantKycPageState extends State<MerchantKycPage> {
       }
     } catch (e) {
       String errorMsg = "Erreur lors de l'envoi du dossier KYB.";
-      if (e is DioException && e.response?.data is Map) {
-        errorMsg = e.response?.data['message'] ?? errorMsg;
+      if (e is DioException) {
+        debugPrint('❌ [KYB Upload Error] status=${e.response?.statusCode}, data=${e.response?.data}');
+        if (e.response?.data is Map) {
+          final data = e.response!.data as Map;
+          if (data['message'] != null) {
+            errorMsg = data['message'].toString();
+          } else if (data['errors'] != null && data['errors'] is Map) {
+            final errors = data['errors'] as Map;
+            final firstError = errors.values.first;
+            errorMsg = firstError is List ? firstError.first.toString() : firstError.toString();
+          }
+        } else if (e.response?.statusCode == 413) {
+          errorMsg = "Les images sélectionnées sont trop volumineuses.";
+        }
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
