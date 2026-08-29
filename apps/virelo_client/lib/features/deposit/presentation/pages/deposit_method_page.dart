@@ -7,6 +7,7 @@ import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/services/biometric_service.dart';
 import 'package:virelo_core/services/wallet_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
+import 'package:virelo_core/network/api_client.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:virelo_design_system/widgets/virelo_alert_dialog.dart';
 import 'deposit_success_page.dart';
