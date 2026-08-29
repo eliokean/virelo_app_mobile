@@ -42,9 +42,7 @@ class PushNotificationService {
     // Initialize local notifications for system push display
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_notification');
     const InitializationSettings initSettings = InitializationSettings(android: androidSettings);
-    await _localNotificationsPlugin.initialize(
-      settings: initSettings,
-    );
+    await _localNotificationsPlugin.initialize(initSettings);
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'virelo_channel_id',
@@ -91,10 +89,10 @@ class PushNotificationService {
     const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
 
     await _localNotificationsPlugin.show(
-      id: id ?? DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title: title,
-      body: body,
-      notificationDetails: platformDetails,
+      id ?? DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title,
+      body,
+      platformDetails,
     );
   }
 
