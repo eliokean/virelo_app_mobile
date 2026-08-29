@@ -37,7 +37,7 @@ class _MerchantKycPageState extends State<MerchantKycPage> {
 
   Future<void> _fetchKycStatus() async {
     try {
-      final response = await ApiClient().dio.get('/auth/kyc/status');
+      final response = await ApiClient().dio.get('/kyb/status');
       if (mounted) {
         setState(() {
           _kycStatus = response.data['status'] ?? 'unverified';
@@ -46,10 +46,21 @@ class _MerchantKycPageState extends State<MerchantKycPage> {
         });
       }
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isFetchingStatus = false;
-        });
+      try {
+        final fallback = await ApiClient().dio.get('/kyc/status');
+        if (mounted) {
+          setState(() {
+            _kycStatus = fallback.data['status'] ?? 'unverified';
+            _adminNotes = fallback.data['admin_notes'];
+            _isFetchingStatus = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _isFetchingStatus = false;
+          });
+        }
       }
     }
   }
@@ -169,7 +180,7 @@ class _MerchantKycPageState extends State<MerchantKycPage> {
       });
 
       final response = await ApiClient().dio.post(
-        '/auth/kyc/upload',
+        '/kyb/upload',
         data: formData,
       );
 
@@ -184,7 +195,7 @@ class _MerchantKycPageState extends State<MerchantKycPage> {
                 children: const [
                   Icon(LucideIcons.checkCircle2, color: Colors.white),
                   SizedBox(width: 10),
-                  Expanded(child: Text('Dossier KYC Entreprise soumis avec succès !')),
+                  Expanded(child: Text('Dossier KYB Marchand soumis avec succès !')),
                 ],
               ),
               backgroundColor: AppColors.success,
@@ -195,7 +206,7 @@ class _MerchantKycPageState extends State<MerchantKycPage> {
         }
       }
     } catch (e) {
-      String errorMsg = "Erreur lors de l'envoi du dossier KYC.";
+      String errorMsg = "Erreur lors de l'envoi du dossier KYB.";
       if (e is DioException && e.response?.data is Map) {
         errorMsg = e.response?.data['message'] ?? errorMsg;
       }

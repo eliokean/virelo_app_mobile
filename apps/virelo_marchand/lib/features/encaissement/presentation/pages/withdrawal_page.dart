@@ -6,6 +6,7 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_design_system/widgets/virelo_primary_button.dart';
 import 'package:virelo_design_system/widgets/virelo_text_field.dart';
+import 'package:dio/dio.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/biometric_service.dart';
 
@@ -90,8 +91,16 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
         }
       });
     } catch (e) {
+      String msg = 'Erreur lors du retrait. Vérifiez votre connexion.';
+      if (e is DioException) {
+        if (e.response?.data is Map) {
+          msg = e.response?.data['message'] ?? e.response?.data['error'] ?? msg;
+        } else if (e.response?.statusCode == 403) {
+          msg = 'Retrait non autorisé : Votre dossier KYB marchand doit être certifié par la conformité.';
+        }
+      }
       setState(() {
-        _errorMessage = 'Erreur lors du retrait. Vérifiez votre connexion.';
+        _errorMessage = msg;
       });
     } finally {
       if (mounted) {

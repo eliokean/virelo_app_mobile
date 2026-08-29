@@ -59,9 +59,14 @@ class _MerchantSettingsPageState extends State<MerchantSettingsPage> {
       
       String kycStatus = 'unverified';
       try {
-        final kycResponse = await ApiClient().dio.get('/auth/kyc/status');
+        final kycResponse = await ApiClient().dio.get('/kyb/status');
         kycStatus = kycResponse.data['status'] ?? 'unverified';
-      } catch (_) {}
+      } catch (_) {
+        try {
+          final fallback = await ApiClient().dio.get('/kyc/status');
+          kycStatus = fallback.data['status'] ?? 'unverified';
+        } catch (_) {}
+      }
 
       if (mounted) {
         setState(() {
