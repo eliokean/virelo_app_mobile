@@ -244,140 +244,153 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Color(0xFFF9F9FA), // Light surface
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
                 ),
                 child: Column(
                   children: [
                     // Amount Display
                     Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0F0F5),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: Color(0xFFE8E8E9),
-                                  child: Icon(LucideIcons.user, size: 14, color: Color(0xFF161A22)),
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F0F5),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
-                                const SizedBox(width: AppSpacing.sm),
-                                Text(
-                                  'Vers ${widget.beneficiaryName}',
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const CircleAvatar(
+                                      radius: 11,
+                                      backgroundColor: Color(0xFFE8E8E9),
+                                      child: Icon(LucideIcons.user, size: 13, color: Color(0xFF161A22)),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Text(
+                                      'Vers ${widget.beneficiaryName}',
+                                      style: AppTextStyles.labelMedium.copyWith(
+                                        color: const Color(0xFF161A22),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8E8E9),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  'FCFA',
                                   style: AppTextStyles.labelMedium.copyWith(
-                                    color: const Color(0xFF161A22),
-                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF1A1C1D),
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xl),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8E8E9),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Text(
-                              'FCFA',
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: const Color(0xFF1A1C1D),
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xxl),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                              child: Text(
-                                _formattedAmount,
-                                style: AppTextStyles.displayLarge.copyWith(
-                                  fontSize: 64,
-                                  color: const Color(0xFF1A1C1D),
+                              const SizedBox(height: 12),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                                  child: Text(
+                                    _formattedAmount,
+                                    style: AppTextStyles.displayLarge.copyWith(
+                                      fontSize: 52,
+                                      color: const Color(0xFF1A1C1D),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(height: 6),
+                              if (_isLoadingBalance)
+                                const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B93A8)),
+                                )
+                              else
+                                Text(
+                                  'Solde actuel: ${_balance?.toStringAsFixed(0) ?? 0} FCFA',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: const Color(0xFF8B93A8),
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                            ],
                           ),
-                          const SizedBox(height: AppSpacing.sm),
-                          if (_isLoadingBalance)
-                            const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B93A8)),
-                            )
-                          else
-                            Text(
-                              'Solde actuel: ${_balance?.toStringAsFixed(0) ?? 0} FCFA',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: const Color(0xFF8B93A8),
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
 
                     // Numpad & Next Button
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.screenH),
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, 12, AppSpacing.screenH, 16),
                       decoration: const BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black12,
-                            blurRadius: 20,
-                            offset: Offset(0, -5),
+                            blurRadius: 16,
+                            offset: Offset(0, -4),
                           )
                         ],
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildNumpad(),
-                          const SizedBox(height: AppSpacing.xl),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 60,
-                            child: ElevatedButton(
-                              onPressed: (_amount == "0" || _isTransferring) ? null : _executeTransfer,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.accent, // Virelo Green
-                                disabledBackgroundColor: AppColors.surfaceBorder,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
+                      child: SafeArea(
+                        top: false,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildNumpad(),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: (_amount == "0" || _isTransferring) ? null : _executeTransfer,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.accent, // Virelo Green
+                                  disabledBackgroundColor: AppColors.surfaceBorder,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(26),
+                                  ),
+                                  elevation: 0,
                                 ),
-                                elevation: 0,
-                              ),
-                              child: _isTransferring
-                                  ? const CircularProgressIndicator(color: Color(0xFF161A22))
-                                  : Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'Envoyer $_formattedAmount FCFA',
-                                          style: AppTextStyles.headlineMedium.copyWith(
-                                            color: const Color(0xFF161A22),
-                                            fontWeight: FontWeight.bold,
+                                child: _isTransferring
+                                    ? const SizedBox(
+                                        height: 22,
+                                        width: 22,
+                                        child: CircularProgressIndicator(color: Color(0xFF161A22), strokeWidth: 2.5),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Envoyer $_formattedAmount FCFA',
+                                            style: AppTextStyles.headlineMedium.copyWith(
+                                              color: const Color(0xFF161A22),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: AppSpacing.sm),
-                                        const Icon(LucideIcons.send, color: Color(0xFF161A22)),
-                                      ],
-                                    ),
+                                          const SizedBox(width: AppSpacing.sm),
+                                          const Icon(LucideIcons.send, color: Color(0xFF161A22), size: 18),
+                                        ],
+                                      ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -395,9 +408,9 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
       crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.5,
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
+      childAspectRatio: 1.8,
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
       children: [
         for (int i = 1; i <= 9; i++) _buildNumpadButton(i.toString()),
         _buildNumpadButton('.'),
@@ -418,15 +431,16 @@ class _TransferAmountPageState extends State<TransferAmountPage> {
             _appendDigit(value);
           }
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Center(
           child: isIcon
-              ? const Icon(LucideIcons.delete, size: 28, color: Color(0xFF1A1C1D))
+              ? const Icon(LucideIcons.delete, size: 24, color: Color(0xFF1A1C1D))
               : Text(
                   value,
                   style: AppTextStyles.displayMedium.copyWith(
                     color: const Color(0xFF1A1C1D),
                     fontWeight: FontWeight.w600,
+                    fontSize: 24,
                   ),
                 ),
         ),
