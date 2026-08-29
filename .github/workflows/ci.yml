@@ -11,10 +11,14 @@ on:
 permissions:
   contents: write
 
+env:
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx3072m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.parallel=true"
+
 jobs:
   build-and-release:
     name: Build & Release Mobile APKs
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -43,12 +47,12 @@ jobs:
       - name: Build Virelo Pay Client APK (Release)
         run: |
           cd "$GITHUB_WORKSPACE/apps/virelo_client"
-          flutter build apk --release --dart-define=API_BASE_URL=https://backend-virelo.onrender.com
+          flutter build apk --release --android-skip-build-dependency-validation --dart-define=API_BASE_URL=https://backend-virelo.onrender.com
 
       - name: Build Virelo Terminal Marchand APK (Release)
         run: |
           cd "$GITHUB_WORKSPACE/apps/virelo_marchand"
-          flutter build apk --release --dart-define=API_BASE_URL=https://backend-virelo.onrender.com
+          flutter build apk --release --android-skip-build-dependency-validation --dart-define=API_BASE_URL=https://backend-virelo.onrender.com
 
       - name: Prepare APK Release Artifacts
         run: |
