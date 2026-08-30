@@ -39,6 +39,13 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     {'id': 'moov', 'name': 'Moov Money'},
   ];
 
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _accountController.dispose();
+    super.dispose();
+  }
+
   Future<void> _initiateWithdrawal() async {
     final amountText = _amountController.text.replaceAll(' ', '');
     final amount = double.tryParse(amountText) ?? 0;
