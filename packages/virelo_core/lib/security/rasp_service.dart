@@ -14,7 +14,6 @@ class RaspService {
       androidConfig: AndroidConfig(
         packageName: 'com.virelo.app',
         signingCertHashes: ['AKa/XvXYZ...'], // A remplacer par le vrai hash SHA-256 en prod
-        supportedAlternativeStores: ['com.sec.android.app.samsungapps'],
       ),
       iosConfig: IOSConfig(
         bundleIds: ['com.virelo.app'],
@@ -32,7 +31,7 @@ class RaspService {
       onDeviceBinding: () => _handleThreat("Device Binding / Cloning"),
       onDeviceID: () => _handleThreat("Device ID manipulation"),
       onHooks: () => _handleThreat("Hooking Framework Detected (Frida/Xposed)"),
-      onPrivilegeEscalation: () => _handleThreat("Root / Jailbreak"),
+      onPrivilegedAccess: () => _handleThreat("Root / Jailbreak"),
       onSimulator: () => _handleThreat("Emulator Detected"),
       onUnofficialStore: () => _handleThreat("Unofficial App Store"),
     );
