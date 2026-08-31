@@ -12,6 +12,7 @@ import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/offline_sync/offline_authorization_payload.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import '../../../../core/services/auto_sync_manager.dart';
 
@@ -108,12 +109,40 @@ class _NfcReaderPageState extends State<NfcReaderPage> with SingleTickerProvider
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) Navigator.pop(context);
       }
+    } on DioException catch (e) {
+      if (mounted) {
+        String errorMsg = 'Erreur serveur (${e.response?.statusCode ?? 'inconnu'})';
+        if (e.response?.data is Map && e.response?.data['message'] != null) {
+          errorMsg = e.response!.data['message'].toString();
+        } else if (e.response?.data is Map && e.response?.data['error'] != null) {
+          errorMsg = e.response!.data['error'].toString();
+        } else if (e.message != null && e.message!.isNotEmpty) {
+          errorMsg = e.message!;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(LucideIcons.alertCircle, color: Colors.white),
+                const SizedBox(width: 10),
+                Expanded(child: Text(errorMsg)),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur de traitement NFC : $e'),
             backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }

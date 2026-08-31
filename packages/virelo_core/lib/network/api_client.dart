@@ -47,7 +47,7 @@ class ApiClient {
         // Si la requête contient du FormData (upload de fichiers), laisser Dio gérer le multipart boundary
         if (options.data is FormData) {
           options.headers.remove('Content-Type');
-          options.contentType = 'multipart/form-data';
+          options.contentType = null;
         }
 
         // Ajouter le token dynamiquement
