@@ -57,7 +57,9 @@ class _KycUploadPageState extends State<KycUploadPage> {
   Future<void> _pickImage(String type, {ImageSource source = ImageSource.gallery}) async {
     final XFile? image = await _picker.pickImage(
       source: type == 'selfie' ? ImageSource.camera : source,
-      imageQuality: 75,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 70,
     );
 
     if (image != null) {
