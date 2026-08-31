@@ -131,23 +131,21 @@ class _GeneratePaymentQrPinPageState extends State<GeneratePaymentQrPinPage> {
         amount: widget.amount,
       );
 
-      // Déduire du budget et sauvegarder dans l'historique local UNIQUEMENT si le client est réellement hors-ligne
-      if (!isOnline) {
-        await offlineStorage.deductOfflineBudget(widget.amount);
-        
-        await offlineStorage.saveOfflineTransaction({
-          'type': 'PAYMENT_OFFLINE',
-          'amount': widget.amount,
-          'status': 'PENDING_MERCHANT_SYNC',
-          'uuid': payload.uuid,
-          'merchantId': widget.merchantId,
-          'sequenceNumber': payload.sequenceNumber,
-          'timestamp': payload.timestamp,
-          'clientPublicKey': payload.clientPublicKey,
-          'clientSignature': payload.clientSignature,
-          'validUntil': payload.validUntil,
-        });
-      }
+      // Déduire du budget séquestre et sauvegarder dans l'historique local
+      await offlineStorage.deductOfflineBudget(widget.amount);
+      
+      await offlineStorage.saveOfflineTransaction({
+        'type': 'PAYMENT_OFFLINE',
+        'amount': widget.amount,
+        'status': 'PENDING_MERCHANT_SYNC',
+        'uuid': payload.uuid,
+        'merchantId': widget.merchantId,
+        'sequenceNumber': payload.sequenceNumber,
+        'timestamp': payload.timestamp,
+        'clientPublicKey': payload.clientPublicKey,
+        'clientSignature': payload.clientSignature,
+        'validUntil': payload.validUntil,
+      });
 
       // Chiffrer le payload en Base64
       final encryptedToken = await cryptoService.encryptPayload(payload);
