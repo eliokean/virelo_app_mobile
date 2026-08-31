@@ -56,8 +56,27 @@ class _NfcReaderPageState extends State<NfcReaderPage> with SingleTickerProvider
       (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error), backgroundColor: AppColors.error),
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(LucideIcons.alertCircle, color: Colors.white),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(error)),
+                ],
+              ),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
           );
+
+          // Relance automatique de l'écoute NFC pour permettre un nouvel essai immédiat
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted && !_isSuccess && !_isProcessing) {
+              _startNfcSession();
+            }
+          });
         }
       }
     );
