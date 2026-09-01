@@ -47,8 +47,22 @@ class OfflineAuthorizationPayload {
     );
   }
 
-  /// Retourne les données brutes sous forme de String pour la signature
+  /// Chaîne canonique EXACTE à signer.
+  ///
+  /// Elle DOIT rester strictement identique à
+  /// `App\Modules\Sync\Services\CryptoLogic::buildDataToSign()` côté backend
+  /// Laravel : mêmes champs, même ordre, séparateur `:`, et même format de
+  /// montant (représentation décimale courte, avec `.0` forcé pour un entier).
+  /// Toute modification ici impose la même modification côté serveur ET un
+  /// redéploiement coordonné client/serveur.
   String getDataToSign() {
-    return '$clientId:$merchantId:$amount:$sequenceNumber:$timestamp:$uuid:$clientPublicKey:$validUntil';
+    return '$clientId:$merchantId:${canonicalAmount(amount)}'
+        ':$sequenceNumber:$timestamp:$uuid:$clientPublicKey:$validUntil';
+  }
+
+  /// Reproduit `(string)(float)$amount` + ajout de `.0` si entier (règle PHP).
+  static String canonicalAmount(double amount) {
+    final s = amount.toString();
+    return s.contains('.') ? s : '$s.0';
   }
 }

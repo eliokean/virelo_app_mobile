@@ -72,7 +72,7 @@ class _ScanContactPageState extends State<ScanContactPage> with SingleTickerProv
                   final uri = Uri.tryParse(rawValue);
                   // Détection d'un paiement hors ligne
                   if (uri != null && uri.scheme == 'virelo' && uri.host == 'offline_pay') {
-                    final merchantId = uri.queryParameters['merchantId'] ?? 'UNKNOWN';
+                    final merchantId = uri.queryParameters['merchantId'] ?? 'ANY';
                     final amountStr = uri.queryParameters['amount'] ?? '0';
                     final amount = double.tryParse(amountStr) ?? 0.0;
                     

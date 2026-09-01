@@ -51,18 +51,21 @@ class _ScanInvoicePageState extends State<ScanInvoicePage> with SingleTickerProv
         setState(() => _isProcessing = true);
 
         try {
-          String merchantId = '1';
+          // 'ANY' = jeton au porteur (le serveur l'accepte mais journalise) ;
+          // ne jamais fabriquer un id numérique arbitraire ('1') qui pourrait
+          // matcher/mismatcher un vrai compte marchand.
+          String merchantId = 'ANY';
           String merchantName = 'Marchand';
           double amount = 0.0;
 
           if (code.contains('/pay?') || code.startsWith('http')) {
             final uri = Uri.parse(code);
-            merchantId = uri.queryParameters['m'] ?? '1';
+            merchantId = uri.queryParameters['m'] ?? 'ANY';
             merchantName = Uri.decodeComponent(uri.queryParameters['n'] ?? 'Marchand');
             amount = double.tryParse(uri.queryParameters['a'] ?? '0') ?? 0.0;
           } else {
             final invoiceData = jsonDecode(code);
-            merchantId = invoiceData['merchantId']?.toString() ?? '1';
+            merchantId = invoiceData['merchantId']?.toString() ?? 'ANY';
             merchantName = invoiceData['merchantName']?.toString() ?? 'Marchand';
             amount = (invoiceData['amount'] as num).toDouble();
           }

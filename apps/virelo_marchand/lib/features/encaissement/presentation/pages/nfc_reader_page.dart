@@ -11,6 +11,7 @@ import 'package:virelo_core/offline_sync/offline_storage_service.dart';
 import 'package:virelo_core/services/auth_service.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/offline_sync/offline_authorization_payload.dart';
+import 'package:virelo_core/offline_sync/merchant_receipt_builder.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/services/offline_sync_service.dart';
@@ -116,7 +117,7 @@ class _NfcReaderPageState extends State<NfcReaderPage> with SingleTickerProvider
 
       final response = await ApiClient().dio.post(
         '/offline/sync',
-        data: payload.toJson(),
+        data: await MerchantReceiptBuilder.augment(payload),
       );
 
       if (mounted) {

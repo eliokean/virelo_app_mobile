@@ -7,6 +7,7 @@ import 'package:virelo_design_system/theme/app_text_styles.dart';
 import 'package:virelo_design_system/constants/app_spacing.dart';
 import 'package:virelo_core/network/api_client.dart';
 import 'package:virelo_core/services/merchant_service.dart';
+import 'package:virelo_core/offline_sync/merchant_receipt_builder.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import 'generate_invoice_amount_page.dart';
@@ -45,6 +46,10 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> with Widg
     _merchantService = MerchantService(ApiClient());
     _offlineSyncService = OfflineSyncService(ApiClient());
     _loadDashboardData();
+
+    // Enregistre (idempotent) la clé publique du device marchand pour les
+    // contre-reçus hors-ligne signés.
+    MerchantReceiptBuilder.registerKeyIfOnline();
 
     // 1. Écoute des événements Push FCM pour rafraîchissement temps réel
     _fcmSubscription = FirebaseMessaging.onMessage.listen((_) {

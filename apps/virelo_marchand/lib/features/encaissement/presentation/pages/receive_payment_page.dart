@@ -119,10 +119,12 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage>
               return;
             }
 
-            // If online, proceed with normal API request
+            // If online, proceed with normal API request (+ contre-reçu marchand)
             await ApiClient().dio.post(
               '/offline/sync',
-              data: payload,
+              data: await MerchantReceiptBuilder.augment(
+                OfflineAuthorizationPayload.fromJson(payload),
+              ),
             );
 
             // Update GPS Position on payment

@@ -56,5 +56,26 @@ void main() {
       final isValid = await cryptoService.verifyPayload(payload);
       expect(isValid, isTrue);
     });
+
+    test('signMerchantReceipt produces a signature verifiable against MRCPT string', () async {
+      final res = await cryptoService.signMerchantReceipt(
+        clientDataToSign: 'client-123:merchant-456:1500.0:1:ts:uuid:pub:vu',
+        merchantId: '42',
+        merchantTimestamp: '2026-09-01T10:00:05Z',
+      );
+
+      expect(res['signature'], isNotEmpty);
+      expect(res['publicKey'], isNotEmpty);
+
+      final pub = SimplePublicKey(
+        base64Decode(res['publicKey']!),
+        type: KeyPairType.ed25519,
+      );
+      final ok = await algorithm.verify(
+        utf8.encode('MRCPT:client-123:merchant-456:1500.0:1:ts:uuid:pub:vu:42:2026-09-01T10:00:05Z'),
+        signature: Signature(base64Decode(res['signature']!), publicKey: pub),
+      );
+      expect(ok, isTrue);
+    });
   });
 }

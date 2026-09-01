@@ -24,6 +24,29 @@ class OfflineCryptoService {
     return await _storageService.getPublicKeyBase64();
   }
 
+  /// Contre-reçu marchand : le device marchand signe la preuve du client
+  /// (sa chaîne canonique) liée à son identité et à l'instant d'encaissement.
+  ///
+  /// Doit rester identique à `CryptoLogic::buildMerchantReceiptToSign()` côté
+  /// backend : `"MRCPT:<clientDataToSign>:<merchantId>:<merchantTimestamp>"`.
+  /// Retourne `{ 'signature': base64, 'publicKey': base64 }`.
+  Future<Map<String, String>> signMerchantReceipt({
+    required String clientDataToSign,
+    required String merchantId,
+    required String merchantTimestamp,
+  }) async {
+    final keyPair = await _storageService.getKeyPair(_algorithm);
+    if (keyPair == null) {
+      throw Exception('Clés cryptographiques du marchand non initialisées');
+    }
+    final data = utf8.encode('MRCPT:$clientDataToSign:$merchantId:$merchantTimestamp');
+    final signature = await _algorithm.sign(data, keyPair: keyPair);
+    return {
+      'signature': base64Encode(signature.bytes),
+      'publicKey': await getPublicKey() ?? '',
+    };
+  }
+
   /// Génère une promesse de débit signée pour un marchand
   Future<OfflineAuthorizationPayload> generateSignedPayload({
     required String clientId,

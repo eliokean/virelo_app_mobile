@@ -18,9 +18,6 @@ class ApiConstants {
   static const String forgotPin = '/auth/forgot-pin';
   static const String resetPin = '/auth/reset-pin';
   
-  // Transactions
-  static const String processOffline = '/transactions/process-offline';
-  
   // Biométrie
   static const String biometricBind = '/auth/biometric-bind';
 
