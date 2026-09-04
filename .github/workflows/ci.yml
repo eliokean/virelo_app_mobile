@@ -44,6 +44,38 @@ jobs:
           cd "$GITHUB_WORKSPACE/apps/virelo_client" && flutter pub get
           cd "$GITHUB_WORKSPACE/apps/virelo_marchand" && flutter pub get
 
+      - name: Provision Android signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -e
+          STORE_PASSWORD="${STORE_PASSWORD:-vireloPFE2026}"
+          KEY_PASSWORD="${KEY_PASSWORD:-vireloPFE2026}"
+          KEY_ALIAS="${KEY_ALIAS:-virelo}"
+          for app in virelo_client virelo_marchand; do
+            A="$GITHUB_WORKSPACE/apps/$app/android"
+            KS="$A/app/upload-keystore.jks"
+            if [ -n "$KEYSTORE_B64" ]; then
+              echo "$KEYSTORE_B64" | base64 -d > "$KS"
+              echo "[$app] keystore décodé depuis les secrets"
+            else
+              keytool -genkeypair -v -keystore "$KS" \
+                -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+                -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+                -dname "CN=Virelo, OU=PFE, O=ESATIC, L=Abidjan, C=CI"
+              echo "[$app] keystore éphémère généré (aucun secret configuré)"
+            fi
+            {
+              echo "storeFile=upload-keystore.jks"
+              echo "storePassword=$STORE_PASSWORD"
+              echo "keyPassword=$KEY_PASSWORD"
+              echo "keyAlias=$KEY_ALIAS"
+            } > "$A/key.properties"
+          done
+
       - name: Build Virelo Pay Client APK (Release)
         run: |
           cd "$GITHUB_WORKSPACE/apps/virelo_client"
